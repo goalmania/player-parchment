@@ -9,6 +9,8 @@ import RadarChart from "@/components/RadarChart";
 import HeatmapEditor from "@/components/HeatmapEditor";
 import ObservationTimeline from "@/components/ObservationTimeline";
 import ObservationForm from "@/components/ObservationForm";
+import SimilarPlayers from "@/components/SimilarPlayers";
+import ShortlistButton from "@/components/ShortlistButton";
 import { buildShareLink } from "@/lib/share";
 import type { Observation } from "@/lib/types";
 import { toast } from "sonner";
@@ -318,10 +320,41 @@ export default function Player() {
         </div>
       </section>
 
-      {/* Bottom nav */}
+      {/* Video */}
+      {player.video_url && (
+        <section className="container pb-10">
+          <div className="section-label mb-3">// VIDEO</div>
+          {(() => {
+            const url = player.video_url!;
+            const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([\w-]{11})/);
+            if (yt) {
+              return (
+                <div className="border-hairline" style={{ aspectRatio: "16/9" }}>
+                  <iframe
+                    src={`https://www.youtube.com/embed/${yt[1]}`}
+                    title="Video giocatore"
+                    style={{ width: "100%", height: "100%", border: 0 }}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              );
+            }
+            return <a href={url} target="_blank" rel="noopener" className="text-accent-lime underline break-all">{url}</a>;
+          })()}
+        </section>
+      )}
+
+      {/* Similar players */}
+      <section className="container pb-10">
+        <div className="section-label mb-3">// PROFILI SIMILI · TACTICAL DNA</div>
+        <SimilarPlayers target={player} pool={players} />
+      </section>
+
       <section className="container pb-16 flex flex-wrap items-center justify-between gap-3">
         <Link to="/database" className="dm-btn-outline">← Database</Link>
         <div className="flex flex-wrap gap-2">
+          <ShortlistButton id={player.id} />
           <button
             onClick={() => {
               const url = buildShareLink(player);

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import type { Player } from "@/lib/types";
 import Stars from "./Stars";
+import ShortlistButton from "./ShortlistButton";
 
 const tagTone: Record<string, "accent" | "orange" | "red" | "teal"> = {
   "HIGH POTENTIAL": "accent",
@@ -67,9 +68,9 @@ export default function PlayerCard({ p, delay = 0 }: { p: Player; delay?: number
         <MiniBar label="Mentalità" value={p.ratings.mental} />
       </div>
 
-      <div className="flex items-center justify-between border-hairline-t pt-3 text-[0.65rem] font-mono uppercase tracking-[0.12rem] text-gray-soft">
-        <span>{p.observation_type} · {p.date}</span>
-        <span className="text-accent-lime">Apri →</span>
+      <div className="flex items-center justify-between border-hairline-t pt-3 text-[0.65rem] font-mono uppercase tracking-[0.12rem] text-gray-soft gap-2">
+        <span className="truncate">{p.observation_type} · {p.date}</span>
+        <ShortlistButton id={p.id} />
       </div>
     </Link>
   );

@@ -8,6 +8,8 @@ const links = [
   { to: "/database", label: "Database" },
   { to: "/map", label: "Mappa" },
   { to: "/compare", label: "Confronto" },
+  { to: "/squad-builder", label: "Squad" },
+  { to: "/match-planner", label: "Match" },
   { to: "/contact", label: "Contatti" },
 ];
 

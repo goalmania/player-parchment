@@ -14,6 +14,8 @@ import AiReport from "./pages/AiReport";
 import Compare from "./pages/Compare";
 import MapPage from "./pages/MapPage";
 import Contact from "./pages/Contact";
+import SquadBuilder from "./pages/SquadBuilder";
+import MatchPlanner from "./pages/MatchPlanner";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +37,8 @@ const App = () => (
           <Route path="/ai-report" element={<AiReport />} />
           <Route path="/compare" element={<Compare />} />
           <Route path="/map" element={<MapPage />} />
+          <Route path="/squad-builder" element={<SquadBuilder />} />
+          <Route path="/match-planner" element={<MatchPlanner />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1,10 +1,11 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { usePlayers } from "@/lib/usePlayers";
 import PlayerCard, { TagPill, VerdictBadge } from "@/components/PlayerCard";
 import { ALL_TAGS, POSITION_LABEL, POSITION_CODES } from "@/lib/types";
 import { exportJSON, importJSON } from "@/lib/storage";
+import { getShortlist, subscribeShortlist } from "@/lib/shortlist";
 import { toast } from "sonner";
 
 type ViewMode = "grid" | "list";
@@ -21,7 +22,11 @@ export default function Database() {
   const [tactical, setTactical] = useState<string>("all");
   const [sort, setSort] = useState<string>("overall_desc");
   const [view, setView] = useState<ViewMode>("grid");
+  const [onlyShortlist, setOnlyShortlist] = useState(false);
+  const [shortlistTick, setShortlistTick] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => subscribeShortlist(() => setShortlistTick((t) => t + 1)), []);
 
   const tacticalRoleOptions = useMemo(() => {
     const set = new Set<string>();
@@ -30,7 +35,9 @@ export default function Database() {
   }, [players]);
 
   const filtered = useMemo(() => {
+    const sl = onlyShortlist ? getShortlist() : null;
     let list = players.filter((p) => {
+      if (sl && !sl.has(p.id)) return false;
       if (search) {
         const s = search.toLowerCase();
         if (![p.name, p.club, p.position_main].some((v) => v.toLowerCase().includes(s))) return false;
@@ -61,7 +68,7 @@ export default function Database() {
       }
     });
     return list;
-  }, [players, search, pos, foot, age, tag, verdict, tactical, sort]);
+  }, [players, search, pos, foot, age, tag, verdict, tactical, sort, onlyShortlist, shortlistTick]);
 
   const handleImport = async (file: File) => {
     try {
@@ -136,15 +143,22 @@ export default function Database() {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
-            <div className="flex items-center gap-1 border-hairline">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1 border-hairline">
+                <button
+                  onClick={() => setView("grid")}
+                  className={`px-3 py-1.5 font-mono text-xs uppercase tracking-[0.12rem] ${view === "grid" ? "bg-accent text-background" : "text-gray-soft"}`}
+                >Grid</button>
+                <button
+                  onClick={() => setView("list")}
+                  className={`px-3 py-1.5 font-mono text-xs uppercase tracking-[0.12rem] ${view === "list" ? "bg-accent text-background" : "text-gray-soft"}`}
+                >List</button>
+              </div>
               <button
-                onClick={() => setView("grid")}
-                className={`px-3 py-1.5 font-mono text-xs uppercase tracking-[0.12rem] ${view === "grid" ? "bg-accent text-background" : "text-gray-soft"}`}
-              >Grid</button>
-              <button
-                onClick={() => setView("list")}
-                className={`px-3 py-1.5 font-mono text-xs uppercase tracking-[0.12rem] ${view === "list" ? "bg-accent text-background" : "text-gray-soft"}`}
-              >List</button>
+                onClick={() => setOnlyShortlist((v) => !v)}
+                className={`px-3 py-1.5 border-hairline font-mono text-xs uppercase tracking-[0.12rem] ${onlyShortlist ? "bg-accent text-background" : "text-gray-soft"}`}
+                aria-pressed={onlyShortlist}
+              >★ Solo Shortlist</button>
             </div>
             <div className="flex flex-wrap gap-2">
               <button onClick={() => exportJSON()} className="dm-btn-outline !py-1.5 !px-3 text-xs">Esporta JSON ↓</button>
