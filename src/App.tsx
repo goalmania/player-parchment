@@ -3,8 +3,16 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import Index from "./pages/Index";
+import Database from "./pages/Database";
+import Player from "./pages/Player";
+import AddReport from "./pages/AddReport";
+import EditReport from "./pages/EditReport";
+import AiReport from "./pages/AiReport";
+import Compare from "./pages/Compare";
+import MapPage from "./pages/MapPage";
+import Contact from "./pages/Contact";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -16,7 +24,14 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/database" element={<Database />} />
+          <Route path="/player" element={<Player />} />
+          <Route path="/add-report" element={<AddReport />} />
+          <Route path="/edit-report" element={<EditReport />} />
+          <Route path="/ai-report" element={<AiReport />} />
+          <Route path="/compare" element={<Compare />} />
+          <Route path="/map" element={<MapPage />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
