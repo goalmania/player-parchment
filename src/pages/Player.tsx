@@ -9,6 +9,8 @@ import RadarChart from "@/components/RadarChart";
 import HeatmapEditor from "@/components/HeatmapEditor";
 import ObservationTimeline from "@/components/ObservationTimeline";
 import ObservationForm from "@/components/ObservationForm";
+import SimilarPlayers from "@/components/SimilarPlayers";
+import ShortlistButton from "@/components/ShortlistButton";
 import { buildShareLink } from "@/lib/share";
 import type { Observation } from "@/lib/types";
 import { toast } from "sonner";
