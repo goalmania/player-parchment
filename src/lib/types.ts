@@ -22,6 +22,25 @@ export interface TacticalRole {
   fit_score: number;
 }
 
+export interface Observation {
+  date: string;
+  overall: number;
+  ratings: { technical: number; tactical: number; physical: number; mental: number };
+  note: string;
+  type: string;
+}
+
+/**
+ * Heatmap is a 6 rows × 10 columns grid (rows = vertical pitch zones, cols = horizontal).
+ * Values 0-100 representing presence/intensity in that zone.
+ * Stored as a flat number[60] (row-major) to keep JSON small.
+ */
+export type Heatmap = number[];
+export const HEATMAP_ROWS = 6;
+export const HEATMAP_COLS = 10;
+export const HEATMAP_SIZE = HEATMAP_ROWS * HEATMAP_COLS;
+export const emptyHeatmap = (): Heatmap => new Array(HEATMAP_SIZE).fill(0);
+
 export interface Player {
   id: string;
   num: string;
@@ -88,6 +107,9 @@ export interface Player {
   summary: string;
   video_url?: string;
   raw_report?: string;
+  observations?: Observation[];
+  heatmap?: Heatmap;
+  formations_played?: string[];
 }
 
 export const POSITION_CODES: PositionCode[] = [
