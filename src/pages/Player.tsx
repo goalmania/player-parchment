@@ -354,6 +354,7 @@ export default function Player() {
       <section className="container pb-16 flex flex-wrap items-center justify-between gap-3">
         <Link to="/database" className="dm-btn-outline">← Database</Link>
         <div className="flex flex-wrap gap-2">
+          <ShortlistButton id={player.id} />
           <button
             onClick={() => {
               const url = buildShareLink(player);
