@@ -6,6 +6,8 @@ import Stars from "@/components/Stars";
 import { TagPill, VerdictBadge } from "@/components/PlayerCard";
 import Pitch from "@/components/Pitch";
 import RadarChart from "@/components/RadarChart";
+import HeatmapEditor from "@/components/HeatmapEditor";
+import { toast } from "sonner";
 
 export default function Player() {
   const [params] = useSearchParams();
