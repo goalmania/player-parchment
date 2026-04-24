@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useState } from "react";
 import Logo from "./Logo";
+import AlertsBell from "./AlertsBell";
 
 const links = [
   { to: "/", label: "Dashboard", end: true },
@@ -43,7 +44,12 @@ export default function Navbar() {
           <NavLink to="/add-report" className="ml-2 dm-btn-outline !py-1.5 !px-3 text-xs">
             + Aggiungi Report
           </NavLink>
+          <AlertsBell />
         </nav>
+
+        <div className="md:hidden flex items-center gap-1">
+          <AlertsBell />
+        </div>
 
         <button
           aria-label="Menu"

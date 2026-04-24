@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Database from "./pages/Database";
 import Player from "./pages/Player";
 import PlayerPrint from "./pages/PlayerPrint";
+import SharedPlayer from "./pages/SharedPlayer";
 import AddReport from "./pages/AddReport";
 import EditReport from "./pages/EditReport";
 import AiReport from "./pages/AiReport";
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/database" element={<Database />} />
           <Route path="/player" element={<Player />} />
           <Route path="/player-print" element={<PlayerPrint />} />
+          <Route path="/shared" element={<SharedPlayer />} />
           <Route path="/add-report" element={<AddReport />} />
           <Route path="/edit-report" element={<EditReport />} />
           <Route path="/ai-report" element={<AiReport />} />
