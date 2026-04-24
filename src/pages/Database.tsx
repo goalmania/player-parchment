@@ -35,7 +35,9 @@ export default function Database() {
   }, [players]);
 
   const filtered = useMemo(() => {
+    const sl = onlyShortlist ? getShortlist() : null;
     let list = players.filter((p) => {
+      if (sl && !sl.has(p.id)) return false;
       if (search) {
         const s = search.toLowerCase();
         if (![p.name, p.club, p.position_main].some((v) => v.toLowerCase().includes(s))) return false;
@@ -66,7 +68,7 @@ export default function Database() {
       }
     });
     return list;
-  }, [players, search, pos, foot, age, tag, verdict, tactical, sort]);
+  }, [players, search, pos, foot, age, tag, verdict, tactical, sort, onlyShortlist, shortlistTick]);
 
   const handleImport = async (file: File) => {
     try {
