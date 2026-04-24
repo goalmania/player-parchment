@@ -1,4 +1,6 @@
-import type { Player } from "./types";
+import type { Player, Observation } from "./types";
+import { emptyHeatmap } from "./types";
+import { heatmapFromPosition } from "@/components/HeatmapEditor";
 import { SEED_PLAYERS } from "./seed";
 
 const STORAGE_KEY = "dmscout_players";
@@ -7,16 +9,70 @@ const AI_DRAFT_KEY = "dmscout_ai_draft";
 
 const subscribers = new Set<() => void>();
 
+/**
+ * Ensure each player has the new optional fields populated with sensible defaults.
+ * Runs on every read so old saved data also gets enriched in the UI.
+ */
+function hydrate(p: Player): Player {
+  let next = p;
+  if (!next.heatmap || next.heatmap.length === 0) {
+    next = { ...next, heatmap: heatmapFromPosition(next.position_code) };
+  }
+  if (!next.observations || next.observations.length === 0) {
+    // Build a 2-point baseline timeline from current ratings + a slightly weaker prior point.
+    const cur: Observation = {
+      date: next.date,
+      overall: next.ratings.overall,
+      ratings: {
+        technical: next.ratings.technical,
+        tactical: next.ratings.tactical,
+        physical: next.ratings.physical,
+        mental: next.ratings.mental,
+      },
+      note: "Stato attuale del profilo.",
+      type: next.observation_type || "Video + Dal vivo",
+    };
+    const priorDate = (() => {
+      const d = new Date(next.date);
+      d.setMonth(d.getMonth() - 2);
+      return d.toISOString().slice(0, 10);
+    })();
+    const drop = (v: number, by = 0.4) => Math.max(0, +(v - by).toFixed(1));
+    const prior: Observation = {
+      date: priorDate,
+      overall: drop(next.ratings.overall, 0.5),
+      ratings: {
+        technical: drop(next.ratings.technical),
+        tactical: drop(next.ratings.tactical, 0.6),
+        physical: drop(next.ratings.physical, 0.2),
+        mental: drop(next.ratings.mental),
+      },
+      note: "Prima osservazione di riferimento.",
+      type: "Video",
+    };
+    next = { ...next, observations: [prior, cur] };
+  }
+  if (!next.formations_played || next.formations_played.length === 0) {
+    next = {
+      ...next,
+      formations_played: Array.from(new Set(next.tactical_roles.map((r) => r.formation))),
+    };
+  }
+  return next;
+}
+
 function read(): Player[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_PLAYERS));
-      return [...SEED_PLAYERS];
+      const seeded = SEED_PLAYERS.map(hydrate);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
+      return seeded;
     }
-    return JSON.parse(raw);
+    const list = JSON.parse(raw) as Player[];
+    return list.map(hydrate);
   } catch {
-    return [...SEED_PLAYERS];
+    return SEED_PLAYERS.map(hydrate);
   }
 }
 
