@@ -1,10 +1,11 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { usePlayers } from "@/lib/usePlayers";
 import PlayerCard, { TagPill, VerdictBadge } from "@/components/PlayerCard";
 import { ALL_TAGS, POSITION_LABEL, POSITION_CODES } from "@/lib/types";
 import { exportJSON, importJSON } from "@/lib/storage";
+import { getShortlist, subscribeShortlist } from "@/lib/shortlist";
 import { toast } from "sonner";
 
 type ViewMode = "grid" | "list";
@@ -21,7 +22,11 @@ export default function Database() {
   const [tactical, setTactical] = useState<string>("all");
   const [sort, setSort] = useState<string>("overall_desc");
   const [view, setView] = useState<ViewMode>("grid");
+  const [onlyShortlist, setOnlyShortlist] = useState(false);
+  const [shortlistTick, setShortlistTick] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => subscribeShortlist(() => setShortlistTick((t) => t + 1)), []);
 
   const tacticalRoleOptions = useMemo(() => {
     const set = new Set<string>();
