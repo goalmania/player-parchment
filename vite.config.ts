@@ -19,4 +19,7 @@ export default defineConfig(({ mode }) => ({
     },
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core"],
   },
+  optimizeDeps: {
+    include: ["react", "react-dom", "react-simple-maps", "d3-geo", "@radix-ui/react-tooltip"],
+  },
 }));
