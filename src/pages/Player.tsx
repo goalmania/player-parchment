@@ -1,12 +1,16 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { usePlayers } from "@/lib/usePlayers";
-import { getPlayer, setCompareSeed } from "@/lib/storage";
+import { getPlayer, savePlayer, setCompareSeed } from "@/lib/storage";
 import Stars from "@/components/Stars";
 import { TagPill, VerdictBadge } from "@/components/PlayerCard";
 import Pitch from "@/components/Pitch";
 import RadarChart from "@/components/RadarChart";
 import HeatmapEditor from "@/components/HeatmapEditor";
+import ObservationTimeline from "@/components/ObservationTimeline";
+import ObservationForm from "@/components/ObservationForm";
+import { buildShareLink } from "@/lib/share";
+import type { Observation } from "@/lib/types";
 import { toast } from "sonner";
 
 export default function Player() {
@@ -285,6 +289,34 @@ export default function Player() {
           </div>
         </section>
       )}
+
+      {/* Timeline osservazioni */}
+      <section className="container pb-10">
+        <div className="section-label mb-3">// TIMELINE OSSERVAZIONI</div>
+        <ObservationTimeline observations={player.observations || []} />
+        <div className="mt-6">
+          <div className="section-label mb-3">// NUOVA OSSERVAZIONE</div>
+          <ObservationForm
+            defaultRatings={{
+              technical: player.ratings.technical,
+              tactical: player.ratings.tactical,
+              physical: player.ratings.physical,
+              mental: player.ratings.mental,
+            }}
+            onAdd={(obs: Observation) => {
+              const next = {
+                ...player,
+                observations: [...(player.observations || []), obs],
+                observation_count: (player.observation_count || 0) + 1,
+                date: obs.date,
+                ratings: { ...player.ratings, ...obs.ratings, overall: obs.overall },
+              };
+              savePlayer(next);
+              toast.success("Osservazione aggiunta ✓");
+            }}
+          />
+        </div>
+      </section>
 
       {/* Bottom nav */}
       <section className="container pb-16 flex flex-wrap items-center justify-between gap-3">
