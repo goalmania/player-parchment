@@ -143,15 +143,22 @@ export default function Database() {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
-            <div className="flex items-center gap-1 border-hairline">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1 border-hairline">
+                <button
+                  onClick={() => setView("grid")}
+                  className={`px-3 py-1.5 font-mono text-xs uppercase tracking-[0.12rem] ${view === "grid" ? "bg-accent text-background" : "text-gray-soft"}`}
+                >Grid</button>
+                <button
+                  onClick={() => setView("list")}
+                  className={`px-3 py-1.5 font-mono text-xs uppercase tracking-[0.12rem] ${view === "list" ? "bg-accent text-background" : "text-gray-soft"}`}
+                >List</button>
+              </div>
               <button
-                onClick={() => setView("grid")}
-                className={`px-3 py-1.5 font-mono text-xs uppercase tracking-[0.12rem] ${view === "grid" ? "bg-accent text-background" : "text-gray-soft"}`}
-              >Grid</button>
-              <button
-                onClick={() => setView("list")}
-                className={`px-3 py-1.5 font-mono text-xs uppercase tracking-[0.12rem] ${view === "list" ? "bg-accent text-background" : "text-gray-soft"}`}
-              >List</button>
+                onClick={() => setOnlyShortlist((v) => !v)}
+                className={`px-3 py-1.5 border-hairline font-mono text-xs uppercase tracking-[0.12rem] ${onlyShortlist ? "bg-accent text-background" : "text-gray-soft"}`}
+                aria-pressed={onlyShortlist}
+              >★ Solo Shortlist</button>
             </div>
             <div className="flex flex-wrap gap-2">
               <button onClick={() => exportJSON()} className="dm-btn-outline !py-1.5 !px-3 text-xs">Esporta JSON ↓</button>
