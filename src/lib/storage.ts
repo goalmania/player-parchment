@@ -1,5 +1,4 @@
 import type { Player, Observation } from "./types";
-import { emptyHeatmap } from "./types";
 import { heatmapFromPosition } from "@/components/HeatmapEditor";
 import { SEED_PLAYERS } from "./seed";
 
