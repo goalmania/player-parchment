@@ -6,6 +6,8 @@ import Stars from "@/components/Stars";
 import { TagPill, VerdictBadge } from "@/components/PlayerCard";
 import Pitch from "@/components/Pitch";
 import RadarChart from "@/components/RadarChart";
+import HeatmapEditor from "@/components/HeatmapEditor";
+import { toast } from "sonner";
 
 export default function Player() {
   const [params] = useSearchParams();
@@ -269,10 +271,39 @@ export default function Player() {
         </div>
       </section>
 
+      {/* Heatmap */}
+      {player.heatmap && player.heatmap.length > 0 && (
+        <section className="container pb-10">
+          <div className="section-label mb-3">// MAPPA DI CALORE</div>
+          <div className="grid lg:grid-cols-[420px_1fr] gap-6 items-start">
+            <HeatmapEditor value={player.heatmap} readOnly height={460} />
+            <div className="text-sm text-gray-soft space-y-2">
+              <p>Zone in cui il giocatore opera con maggiore frequenza, dedotte dalle osservazioni.</p>
+              <p>Vista <strong className="text-foreground">top-down</strong>: porta avversaria in alto, propria in basso.</p>
+              <p>Modificabile dalla scheda di <Link to={`/edit-report?id=${player.id}`} className="text-accent-lime">modifica report</Link>.</p>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Bottom nav */}
       <section className="container pb-16 flex flex-wrap items-center justify-between gap-3">
         <Link to="/database" className="dm-btn-outline">← Database</Link>
         <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => {
+              const url = `${window.location.origin}/player?id=${player.id}`;
+              navigator.clipboard?.writeText(url).then(
+                () => toast.success("Link copiato negli appunti ✓"),
+                () => toast.error("Impossibile copiare il link"),
+              );
+            }}
+            className="dm-btn-outline"
+          >🔗 Condividi</button>
+          <button
+            onClick={() => window.open(`/player-print?id=${player.id}`, "_blank", "noopener")}
+            className="dm-btn-outline"
+          >⬇ Scarica PDF</button>
           <Link to={`/edit-report?id=${player.id}`} className="dm-btn-outline">✏ Modifica</Link>
           <button
             onClick={() => { setCompareSeed(player.id); navigate("/compare"); }}

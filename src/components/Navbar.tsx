@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useState } from "react";
+import Logo from "./Logo";
 
 const links = [
   { to: "/", label: "Dashboard", end: true },
@@ -20,7 +21,7 @@ export default function Navbar() {
     >
       <div className="container h-full flex items-center justify-between gap-6">
         <NavLink to="/" className="flex items-center gap-2.5">
-          <span className="pulse-dot" aria-hidden />
+          <Logo size={28} variant="light" />
           <span className="font-display font-bold text-lg tracking-[0.18rem]">DM SCOUT</span>
         </NavLink>
 

@@ -4,9 +4,10 @@ import {
   ALL_TAGS, FORMATIONS, POSITION_CODES, POSITION_LABEL,
   REGIONS, ROLE_OPTIONS_BY_POSITION,
 } from "@/lib/types";
-import type { Player, PositionCode } from "@/lib/types";
+import type { Player, PositionCode, Heatmap } from "@/lib/types";
 import { deletePlayer, generateId, nextNum, savePlayer } from "@/lib/storage";
 import Stars from "@/components/Stars";
+import HeatmapEditor, { heatmapFromPosition } from "@/components/HeatmapEditor";
 import { toast } from "sonner";
 
 interface Props {
@@ -28,6 +29,9 @@ const empty: Player = {
   observation_type: "Video + Dal vivo", observation_count: 1,
   date: new Date().toISOString().slice(0, 10),
   strengths: [], weaknesses: [], summary: "", video_url: "", raw_report: "",
+  heatmap: heatmapFromPosition("CM"),
+  observations: [],
+  formations_played: [],
 };
 
 function calcOverall(r: Player["ratings"]) {
@@ -227,6 +231,45 @@ export default function ReportForm({ initial, mode }: Props) {
           {data.tactical_roles.length < 4 && (
             <button type="button" onClick={addTacticalRole} className="dm-btn-outline">+ Aggiungi ruolo tattico</button>
           )}
+        </div>
+      </Section>
+
+      {/* SECTION B2 — HEATMAP */}
+      <Section label="// B2 · MAPPA DI CALORE">
+        <div className="grid md:grid-cols-[1fr_280px] gap-6 items-start">
+          <HeatmapEditor
+            value={data.heatmap}
+            onChange={(h: Heatmap) => update("heatmap", h)}
+            height={420}
+          />
+          <div className="space-y-3 text-sm">
+            <p className="text-gray-soft">
+              Dipingi le zone in cui il giocatore opera di più. Vista <strong className="text-foreground">top-down</strong>:
+              porta avversaria in alto, propria in basso. L'AI può generarla automaticamente dal testo.
+            </p>
+            <button
+              type="button"
+              onClick={() => update("heatmap", heatmapFromPosition(data.position_code))}
+              className="dm-btn-outline !py-1.5 !px-3 text-xs w-full justify-center"
+            >
+              ↺ Reset dal ruolo ({data.position_code})
+            </button>
+            <div className="border-hairline p-3 bg-gray-light/40">
+              <div className="section-label mb-2">// LEGENDA</div>
+              <div className="flex flex-col gap-1.5">
+                {[["Bassa", 30], ["Media", 60], ["Alta", 90]].map(([label, v]) => (
+                  <div key={label as string} className="flex items-center gap-2">
+                    <span style={{
+                      width: 24, height: 12, display: "inline-block",
+                      background: `hsla(${(200 - 188 * ((v as number) / 100)).toFixed(0)}, 90%, 50%, ${(0.25 + ((v as number) / 100) * 0.55).toFixed(2)})`,
+                      border: "0.5px solid hsl(0 0% 100% / 0.1)",
+                    }} />
+                    <span className="font-mono text-xs text-gray-soft">{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </Section>
 
