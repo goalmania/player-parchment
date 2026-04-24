@@ -1,12 +1,16 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { usePlayers } from "@/lib/usePlayers";
-import { getPlayer, setCompareSeed } from "@/lib/storage";
+import { getPlayer, savePlayer, setCompareSeed } from "@/lib/storage";
 import Stars from "@/components/Stars";
 import { TagPill, VerdictBadge } from "@/components/PlayerCard";
 import Pitch from "@/components/Pitch";
 import RadarChart from "@/components/RadarChart";
 import HeatmapEditor from "@/components/HeatmapEditor";
+import ObservationTimeline from "@/components/ObservationTimeline";
+import ObservationForm from "@/components/ObservationForm";
+import { buildShareLink } from "@/lib/share";
+import type { Observation } from "@/lib/types";
 import { toast } from "sonner";
 
 export default function Player() {
@@ -286,19 +290,48 @@ export default function Player() {
         </section>
       )}
 
+      {/* Timeline osservazioni */}
+      <section className="container pb-10">
+        <div className="section-label mb-3">// TIMELINE OSSERVAZIONI</div>
+        <ObservationTimeline observations={player.observations || []} />
+        <div className="mt-6">
+          <div className="section-label mb-3">// NUOVA OSSERVAZIONE</div>
+          <ObservationForm
+            defaultRatings={{
+              technical: player.ratings.technical,
+              tactical: player.ratings.tactical,
+              physical: player.ratings.physical,
+              mental: player.ratings.mental,
+            }}
+            onAdd={(obs: Observation) => {
+              const next = {
+                ...player,
+                observations: [...(player.observations || []), obs],
+                observation_count: (player.observation_count || 0) + 1,
+                date: obs.date,
+                ratings: { ...player.ratings, ...obs.ratings, overall: obs.overall },
+              };
+              savePlayer(next);
+              toast.success("Osservazione aggiunta ✓");
+            }}
+          />
+        </div>
+      </section>
+
       {/* Bottom nav */}
       <section className="container pb-16 flex flex-wrap items-center justify-between gap-3">
         <Link to="/database" className="dm-btn-outline">← Database</Link>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => {
-              const url = `${window.location.origin}/player?id=${player.id}`;
+              const url = buildShareLink(player);
               navigator.clipboard?.writeText(url).then(
-                () => toast.success("Link copiato negli appunti ✓"),
+                () => toast.success("Link condivisibile copiato ✓ (contiene il profilo completo)"),
                 () => toast.error("Impossibile copiare il link"),
               );
             }}
             className="dm-btn-outline"
+            title="Genera un link autonomo che chiunque può aprire senza accesso"
           >🔗 Condividi</button>
           <button
             onClick={() => window.open(`/player-print?id=${player.id}`, "_blank", "noopener")}

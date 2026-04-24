@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useState } from "react";
 import Logo from "./Logo";
+import AlertsBell from "./AlertsBell";
 
 const links = [
   { to: "/", label: "Dashboard", end: true },
@@ -43,17 +44,21 @@ export default function Navbar() {
           <NavLink to="/add-report" className="ml-2 dm-btn-outline !py-1.5 !px-3 text-xs">
             + Aggiungi Report
           </NavLink>
+          <AlertsBell />
         </nav>
 
-        <button
-          aria-label="Menu"
-          className="md:hidden text-foreground p-2"
-          onClick={() => setOpen((o) => !o)}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            {open ? <path d="M6 6l12 12M18 6L6 18" /> : <><path d="M3 6h18" /><path d="M3 12h18" /><path d="M3 18h18" /></>}
-          </svg>
-        </button>
+        <div className="md:hidden flex items-center gap-1">
+          <AlertsBell />
+          <button
+            aria-label="Menu"
+            className="text-foreground p-2"
+            onClick={() => setOpen((o) => !o)}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              {open ? <path d="M6 6l12 12M18 6L6 18" /> : <><path d="M3 6h18" /><path d="M3 12h18" /><path d="M3 18h18" /></>}
+            </svg>
+          </button>
+        </div>
       </div>
 
       {open && (
