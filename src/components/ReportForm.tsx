@@ -4,9 +4,10 @@ import {
   ALL_TAGS, FORMATIONS, POSITION_CODES, POSITION_LABEL,
   REGIONS, ROLE_OPTIONS_BY_POSITION,
 } from "@/lib/types";
-import type { Player, PositionCode } from "@/lib/types";
+import type { Player, PositionCode, Heatmap } from "@/lib/types";
 import { deletePlayer, generateId, nextNum, savePlayer } from "@/lib/storage";
 import Stars from "@/components/Stars";
+import HeatmapEditor, { heatmapFromPosition } from "@/components/HeatmapEditor";
 import { toast } from "sonner";
 
 interface Props {
@@ -28,6 +29,9 @@ const empty: Player = {
   observation_type: "Video + Dal vivo", observation_count: 1,
   date: new Date().toISOString().slice(0, 10),
   strengths: [], weaknesses: [], summary: "", video_url: "", raw_report: "",
+  heatmap: heatmapFromPosition("CM"),
+  observations: [],
+  formations_played: [],
 };
 
 function calcOverall(r: Player["ratings"]) {
