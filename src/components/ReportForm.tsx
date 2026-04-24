@@ -234,6 +234,45 @@ export default function ReportForm({ initial, mode }: Props) {
         </div>
       </Section>
 
+      {/* SECTION B2 — HEATMAP */}
+      <Section label="// B2 · MAPPA DI CALORE">
+        <div className="grid md:grid-cols-[1fr_280px] gap-6 items-start">
+          <HeatmapEditor
+            value={data.heatmap}
+            onChange={(h: Heatmap) => update("heatmap", h)}
+            height={420}
+          />
+          <div className="space-y-3 text-sm">
+            <p className="text-gray-soft">
+              Dipingi le zone in cui il giocatore opera di più. Vista <strong className="text-foreground">top-down</strong>:
+              porta avversaria in alto, propria in basso. L'AI può generarla automaticamente dal testo.
+            </p>
+            <button
+              type="button"
+              onClick={() => update("heatmap", heatmapFromPosition(data.position_code))}
+              className="dm-btn-outline !py-1.5 !px-3 text-xs w-full justify-center"
+            >
+              ↺ Reset dal ruolo ({data.position_code})
+            </button>
+            <div className="border-hairline p-3 bg-gray-light/40">
+              <div className="section-label mb-2">// LEGENDA</div>
+              <div className="flex flex-col gap-1.5">
+                {[["Bassa", 30], ["Media", 60], ["Alta", 90]].map(([label, v]) => (
+                  <div key={label as string} className="flex items-center gap-2">
+                    <span style={{
+                      width: 24, height: 12, display: "inline-block",
+                      background: `hsla(${(200 - 188 * ((v as number) / 100)).toFixed(0)}, 90%, 50%, ${(0.25 + ((v as number) / 100) * 0.55).toFixed(2)})`,
+                      border: "0.5px solid hsl(0 0% 100% / 0.1)",
+                    }} />
+                    <span className="font-mono text-xs text-gray-soft">{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </Section>
+
       {/* SECTION C — VALUTAZIONI */}
       <Section label="// C · VALUTAZIONI (0-10)">
         <div className="grid md:grid-cols-2 gap-6">
