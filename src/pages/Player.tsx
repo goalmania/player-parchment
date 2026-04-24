@@ -324,13 +324,14 @@ export default function Player() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => {
-              const url = `${window.location.origin}/player?id=${player.id}`;
+              const url = buildShareLink(player);
               navigator.clipboard?.writeText(url).then(
-                () => toast.success("Link copiato negli appunti ✓"),
+                () => toast.success("Link condivisibile copiato ✓ (contiene il profilo completo)"),
                 () => toast.error("Impossibile copiare il link"),
               );
             }}
             className="dm-btn-outline"
+            title="Genera un link autonomo che chiunque può aprire senza accesso"
           >🔗 Condividi</button>
           <button
             onClick={() => window.open(`/player-print?id=${player.id}`, "_blank", "noopener")}
