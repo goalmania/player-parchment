@@ -5,9 +5,10 @@ import {
   REGIONS, ROLE_OPTIONS_BY_POSITION,
 } from "@/lib/types";
 import type { Player, PositionCode, Heatmap } from "@/lib/types";
-import { deletePlayer, generateId, nextNum, savePlayer } from "@/lib/storage";
+import { deletePlayer, nextNum, savePlayer } from "@/lib/storage";
 import Stars from "@/components/Stars";
 import HeatmapEditor, { heatmapFromPosition } from "@/components/HeatmapEditor";
+import VideoManager from "@/components/VideoManager";
 import { toast } from "sonner";
 
 interface Props {
@@ -403,7 +404,7 @@ export default function ReportForm({ initial, mode }: Props) {
           />
         </div>
 
-        <div className="grid md:grid-cols-4 gap-4 mt-6">
+        <div className="grid md:grid-cols-3 gap-4 mt-6">
           <Field label="Tipo osservazione">
             <select className="dm-input" value={data.observation_type} onChange={(e) => update("observation_type", e.target.value)}>
               <option>Video</option><option>Dal vivo</option><option>Video + Dal vivo</option>
@@ -411,7 +412,14 @@ export default function ReportForm({ initial, mode }: Props) {
           </Field>
           <Field label="N. osservazioni"><input type="number" className="dm-input" value={data.observation_count} onChange={(e) => update("observation_count", parseInt(e.target.value) || 0)} /></Field>
           <Field label="Data osservazione"><input type="date" className="dm-input" value={data.date} onChange={(e) => update("date", e.target.value)} /></Field>
-          <Field label="URL video YouTube"><input className="dm-input" value={data.video_url || ""} onChange={(e) => update("video_url", e.target.value)} /></Field>
+        </div>
+
+        <div className="mt-6">
+          <div className="text-[0.65rem] font-mono uppercase tracking-[0.12rem] text-gray-soft mb-2">Video del giocatore</div>
+          <VideoManager
+            videos={data.videos || []}
+            onChange={(videos) => update("videos", videos)}
+          />
         </div>
       </Section>
 

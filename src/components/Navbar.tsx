@@ -10,7 +10,8 @@ const links = [
   { to: "/compare", label: "Confronto" },
   { to: "/squad-builder", label: "Squad" },
   { to: "/match-planner", label: "Match" },
-  { to: "/contact", label: "Contatti" },
+  { to: "/browse", label: "Esplora" },
+  { to: "/account", label: "Account" },
 ];
 
 export default function Navbar() {
