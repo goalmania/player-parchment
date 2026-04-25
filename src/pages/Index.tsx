@@ -28,7 +28,7 @@ export default function Index() {
               DM SCOUT
             </h1>
             <p className="text-base md:text-lg text-gray-soft max-w-lg mb-8">
-              Analisi tattica e valutazione giocatori — Serie D · Eccellenza · Promozione
+              Analisi tattica e valutazione giocatori.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link to="/database" className="dm-btn-primary">Vai al Database →</Link>
