@@ -14,16 +14,225 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      access_requests: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          owner_id: string
+          player_id: string
+          requester_id: string
+          status: Database["public"]["Enums"]["access_request_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          owner_id: string
+          player_id: string
+          requester_id: string
+          status?: Database["public"]["Enums"]["access_request_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          owner_id?: string
+          player_id?: string
+          requester_id?: string
+          status?: Database["public"]["Enums"]["access_request_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_requests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          age: number | null
+          birth_year: number | null
+          club: string | null
+          created_at: string
+          date: string | null
+          flag: string | null
+          foot: string | null
+          formations_played: Json | null
+          heatmap: Json | null
+          height: number | null
+          id: string
+          lat: number | null
+          league: string | null
+          lng: number | null
+          market: Json | null
+          name: string
+          nationality: string | null
+          num: string | null
+          observation_count: number | null
+          observation_type: string | null
+          observations: Json | null
+          owner_id: string
+          photo: string | null
+          position_code: string | null
+          position_main: string | null
+          position_secondary: Json | null
+          ratings: Json | null
+          raw_report: string | null
+          region: string | null
+          skills: Json | null
+          stars: Json | null
+          strengths: Json | null
+          summary: string | null
+          tactical_roles: Json | null
+          tags: Json | null
+          updated_at: string
+          verdict: string | null
+          verdict_type: string | null
+          video_urls: Json | null
+          weaknesses: Json | null
+          weight: number | null
+        }
+        Insert: {
+          age?: number | null
+          birth_year?: number | null
+          club?: string | null
+          created_at?: string
+          date?: string | null
+          flag?: string | null
+          foot?: string | null
+          formations_played?: Json | null
+          heatmap?: Json | null
+          height?: number | null
+          id?: string
+          lat?: number | null
+          league?: string | null
+          lng?: number | null
+          market?: Json | null
+          name: string
+          nationality?: string | null
+          num?: string | null
+          observation_count?: number | null
+          observation_type?: string | null
+          observations?: Json | null
+          owner_id: string
+          photo?: string | null
+          position_code?: string | null
+          position_main?: string | null
+          position_secondary?: Json | null
+          ratings?: Json | null
+          raw_report?: string | null
+          region?: string | null
+          skills?: Json | null
+          stars?: Json | null
+          strengths?: Json | null
+          summary?: string | null
+          tactical_roles?: Json | null
+          tags?: Json | null
+          updated_at?: string
+          verdict?: string | null
+          verdict_type?: string | null
+          video_urls?: Json | null
+          weaknesses?: Json | null
+          weight?: number | null
+        }
+        Update: {
+          age?: number | null
+          birth_year?: number | null
+          club?: string | null
+          created_at?: string
+          date?: string | null
+          flag?: string | null
+          foot?: string | null
+          formations_played?: Json | null
+          heatmap?: Json | null
+          height?: number | null
+          id?: string
+          lat?: number | null
+          league?: string | null
+          lng?: number | null
+          market?: Json | null
+          name?: string
+          nationality?: string | null
+          num?: string | null
+          observation_count?: number | null
+          observation_type?: string | null
+          observations?: Json | null
+          owner_id?: string
+          photo?: string | null
+          position_code?: string | null
+          position_main?: string | null
+          position_secondary?: Json | null
+          ratings?: Json | null
+          raw_report?: string | null
+          region?: string | null
+          skills?: Json | null
+          stars?: Json | null
+          strengths?: Json | null
+          summary?: string | null
+          tactical_roles?: Json | null
+          tags?: Json | null
+          updated_at?: string
+          verdict?: string | null
+          verdict_type?: string | null
+          video_urls?: Json | null
+          weaknesses?: Json | null
+          weight?: number | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          org_name: string
+          org_type: Database["public"]["Enums"]["org_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          org_name: string
+          org_type: Database["public"]["Enums"]["org_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          org_name?: string
+          org_type?: Database["public"]["Enums"]["org_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_player_access: {
+        Args: { _player_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      access_request_status: "pending" | "accepted" | "rejected"
+      org_type: "agency" | "club"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +359,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      access_request_status: ["pending", "accepted", "rejected"],
+      org_type: ["agency", "club"],
+    },
   },
 } as const

@@ -12,7 +12,7 @@ export default function PageShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-2.5 font-mono uppercase tracking-[0.18rem]">
             <Logo size={20} /> DM SCOUT — SCOUTING OPS
           </div>
-          <div className="font-mono">© {new Date().getFullYear()} · Built for Serie D · Eccellenza · Promozione</div>
+          <div className="font-mono">© {new Date().getFullYear()} · Scouting Operations</div>
         </div>
       </footer>
     </>
