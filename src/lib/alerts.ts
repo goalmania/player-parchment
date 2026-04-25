@@ -108,20 +108,30 @@ export function recomputeAlerts(): Alert[] {
   }
 
   // Preserve previously-read flags
-  const previous = new Map(read().map((a) => [a.id, a.read]));
+  const existing = read();
+  const previous = new Map(existing.map((a) => [a.id, a.read]));
   const merged = out.map((a) => ({ ...a, read: previous.get(a.id) ?? false }));
   merged.sort((a, b) => b.created_at.localeCompare(a.created_at));
-  write(merged);
+  // Only persist (and notify) if the alert set actually changed — otherwise we cause
+  // an infinite render loop when subscribers re-call this function.
+  const sameLength = existing.length === merged.length;
+  const sameContent = sameLength && merged.every((a, i) => {
+    const e = existing[i];
+    return e && e.id === a.id && e.read === a.read;
+  });
+  if (!sameContent) {
+    localStorage.setItem(ALERTS_KEY, JSON.stringify(merged));
+    subscribers.forEach((fn) => fn());
+  }
   return merged;
 }
 
 export function getAlerts(): Alert[] {
-  // Always recompute so storage stays in sync with player state
   return recomputeAlerts();
 }
 
 export function unreadCount(): number {
-  return getAlerts().filter((a) => !a.read).length;
+  return recomputeAlerts().filter((a) => !a.read).length;
 }
 
 export function markAllRead() {
