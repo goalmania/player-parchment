@@ -85,22 +85,28 @@ export default function ReportForm({ initial, mode }: Props) {
     ...d, tactical_roles: d.tactical_roles.map((r, idx) => idx === i ? { ...r, [k]: v } : r),
   }));
 
-  const submit = () => {
+  const submit = async () => {
     if (!data.name.trim()) { toast.error("Nome obbligatorio"); return; }
-    let id = data.id;
-    let num = data.num;
-    if (mode === "create" || !id) { id = generateId(data.name); num = num || nextNum(); }
-    const saved = savePlayer({ ...data, id, num, ratings: { ...data.ratings, overall: calcOverall(data.ratings) } });
-    toast.success(mode === "create" ? "Report salvato" : "Report aggiornato");
-    navigate(`/player?id=${saved.id}`);
+    let num = data.num || nextNum();
+    try {
+      const saved = await savePlayer({ ...data, num, ratings: { ...data.ratings, overall: calcOverall(data.ratings) } });
+      toast.success(mode === "create" ? "Report salvato" : "Report aggiornato");
+      navigate(`/player?id=${saved.id}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Salvataggio fallito");
+    }
   };
 
-  const remove = () => {
+  const remove = async () => {
     if (!data.id) return;
     if (!window.confirm("Sei sicuro? Questa azione è irreversibile.")) return;
-    deletePlayer(data.id);
-    toast.success("Report eliminato");
-    navigate("/database");
+    try {
+      await deletePlayer(data.id);
+      toast.success("Report eliminato");
+      navigate("/database");
+    } catch (e: any) {
+      toast.error(e?.message || "Eliminazione fallita");
+    }
   };
 
   return (
