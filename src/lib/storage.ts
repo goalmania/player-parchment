@@ -235,11 +235,11 @@ export async function savePlayer(player: Player): Promise<Player> {
   let toSave = { ...player };
   if (!toSave.num) toSave.num = nextNum();
 
-  const row = playerToRow(toSave, ownerId);
+  const row = playerToRow(toSave, ownerId) as any;
 
   let saved: Player;
   if (isNew) {
-    delete (row as any).id;
+    delete row.id;
     const { data, error } = await supabase
       .from("players")
       .insert(row)
@@ -290,8 +290,8 @@ export async function importJSON(file: File): Promise<number> {
   if (!Array.isArray(incoming)) throw new Error("Formato JSON non valido");
 
   const rows = incoming.map((p) => {
-    const r = playerToRow(p, ownerId);
-    delete (r as any).id;
+    const r = playerToRow(p, ownerId) as any;
+    delete r.id;
     return r;
   });
   const { error } = await supabase.from("players").insert(rows);
@@ -311,8 +311,8 @@ export async function migrateLocalToCloud(): Promise<number> {
   if (!Array.isArray(list) || list.length === 0) return 0;
 
   const rows = list.map((p) => {
-    const r = playerToRow(p, ownerId);
-    delete (r as any).id;
+    const r = playerToRow(p, ownerId) as any;
+    delete r.id;
     return r;
   });
   const { error } = await supabase.from("players").insert(rows);
