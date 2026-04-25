@@ -11,7 +11,9 @@ import ObservationTimeline from "@/components/ObservationTimeline";
 import ObservationForm from "@/components/ObservationForm";
 import SimilarPlayers from "@/components/SimilarPlayers";
 import ShortlistButton from "@/components/ShortlistButton";
+import VideoGallery from "@/components/VideoGallery";
 import { buildShareLink } from "@/lib/share";
+import { useAuth } from "@/lib/auth";
 import type { Observation } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -21,6 +23,8 @@ export default function Player() {
   const players = usePlayers();
   const player = getPlayer(id);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isOwner = !!player && !!user && player.owner_id === user.id;
 
   if (!player) {
     return (
@@ -296,52 +300,45 @@ export default function Player() {
       <section className="container pb-10">
         <div className="section-label mb-3">// TIMELINE OSSERVAZIONI</div>
         <ObservationTimeline observations={player.observations || []} />
-        <div className="mt-6">
-          <div className="section-label mb-3">// NUOVA OSSERVAZIONE</div>
-          <ObservationForm
-            defaultRatings={{
-              technical: player.ratings.technical,
-              tactical: player.ratings.tactical,
-              physical: player.ratings.physical,
-              mental: player.ratings.mental,
-            }}
-            onAdd={(obs: Observation) => {
-              const next = {
-                ...player,
-                observations: [...(player.observations || []), obs],
-                observation_count: (player.observation_count || 0) + 1,
-                date: obs.date,
-                ratings: { ...player.ratings, ...obs.ratings, overall: obs.overall },
-              };
-              savePlayer(next);
-              toast.success("Osservazione aggiunta ✓");
-            }}
-          />
-        </div>
+        {isOwner && (
+          <div className="mt-6">
+            <div className="section-label mb-3">// NUOVA OSSERVAZIONE</div>
+            <ObservationForm
+              defaultRatings={{
+                technical: player.ratings.technical,
+                tactical: player.ratings.tactical,
+                physical: player.ratings.physical,
+                mental: player.ratings.mental,
+              }}
+              onAdd={async (obs: Observation) => {
+                const next = {
+                  ...player,
+                  observations: [...(player.observations || []), obs],
+                  observation_count: (player.observation_count || 0) + 1,
+                  date: obs.date,
+                  ratings: { ...player.ratings, ...obs.ratings, overall: obs.overall },
+                };
+                try {
+                  await savePlayer(next);
+                  toast.success("Osservazione aggiunta ✓");
+                } catch (e: any) { toast.error(e?.message || "Errore"); }
+              }}
+            />
+          </div>
+        )}
       </section>
 
-      {/* Video */}
-      {player.video_url && (
+      {/* Video gallery */}
+      {((player.videos && player.videos.length > 0) || player.video_url) && (
         <section className="container pb-10">
           <div className="section-label mb-3">// VIDEO</div>
-          {(() => {
-            const url = player.video_url!;
-            const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([\w-]{11})/);
-            if (yt) {
-              return (
-                <div className="border-hairline" style={{ aspectRatio: "16/9" }}>
-                  <iframe
-                    src={`https://www.youtube.com/embed/${yt[1]}`}
-                    title="Video giocatore"
-                    style={{ width: "100%", height: "100%", border: 0 }}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              );
+          <VideoGallery
+            videos={
+              player.videos && player.videos.length > 0
+                ? player.videos
+                : [{ url: player.video_url!, kind: "external" as const }]
             }
-            return <a href={url} target="_blank" rel="noopener" className="text-accent-lime underline break-all">{url}</a>;
-          })()}
+          />
         </section>
       )}
 

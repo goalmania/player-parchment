@@ -41,11 +41,15 @@ export default function AiReport() {
     }
   };
 
-  const saveDirect = () => {
+  const saveDirect = async () => {
     if (!preview) return;
-    const saved = savePlayer(preview as Player);
-    toast.success("Report salvato");
-    navigate(`/player?id=${saved.id}`);
+    try {
+      const saved = await savePlayer(preview as Player);
+      toast.success("Report salvato");
+      navigate(`/player?id=${saved.id}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Salvataggio fallito");
+    }
   };
   const editFirst = () => {
     if (!preview) return;

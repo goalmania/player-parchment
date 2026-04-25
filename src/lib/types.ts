@@ -4,21 +4,13 @@ export type PositionCode =
 
 export type VerdictType = "buy" | "monitor" | "pass";
 
-export type RoleCode =
-  | "GK_SWEEPER" | "GK_SHOT_STOPPER"
-  | "CB_BALL_PLAYING" | "CB_STOPPER" | "CB_LIBERO"
-  | "RB_WING_BACK" | "RB_INVERTED" | "RB_CLASSIC"
-  | "LB_WING_BACK" | "LB_INVERTED" | "LB_CLASSIC"
-  | "CDM_SCREEN" | "CDM_BOX_TO_BOX"
-  | "CM_REGISTA" | "CM_BOX" | "CM_MEZZALA_OFF" | "CM_MEZZALA_DEF"
-  | "CAM_TREQUARTISTA" | "CAM_SHADOW"
-  | "LW_WINGER" | "LW_INVERTED" | "RW_WINGER" | "RW_INVERTED"
-  | "ST_TARGET" | "ST_PRESSING" | "CF_FALSE_9" | "CF_SECONDA_PUNTA";
+export type RoleDuty = "Defend" | "Support" | "Attack";
 
 export interface TacticalRole {
   formation: string;
   role: string;
-  role_code: RoleCode | string;
+  role_code: string;
+  duty?: RoleDuty;
   fit_score: number;
 }
 
@@ -30,19 +22,22 @@ export interface Observation {
   type: string;
 }
 
-/**
- * Heatmap is a 6 rows × 10 columns grid (rows = vertical pitch zones, cols = horizontal).
- * Values 0-100 representing presence/intensity in that zone.
- * Stored as a flat number[60] (row-major) to keep JSON small.
- */
 export type Heatmap = number[];
 export const HEATMAP_ROWS = 6;
 export const HEATMAP_COLS = 10;
 export const HEATMAP_SIZE = HEATMAP_ROWS * HEATMAP_COLS;
 export const emptyHeatmap = (): Heatmap => new Array(HEATMAP_SIZE).fill(0);
 
+export interface PlayerVideo {
+  url: string;
+  label?: string;
+  /** "youtube" | "vimeo" | "file" | "external" */
+  kind: "youtube" | "vimeo" | "file" | "external";
+}
+
 export interface Player {
   id: string;
+  owner_id?: string;
   num: string;
   name: string;
   photo: string;
@@ -105,7 +100,9 @@ export interface Player {
   strengths: string[];
   weaknesses: string[];
   summary: string;
+  /** @deprecated use videos[] - kept for backward compat */
   video_url?: string;
+  videos?: PlayerVideo[];
   raw_report?: string;
   observations?: Observation[];
   heatmap?: Heatmap;
@@ -126,7 +123,6 @@ export const POSITION_FROM_LABEL: Record<string, PositionCode> = Object.fromEntr
   Object.entries(POSITION_LABEL).map(([k,v]) => [v, k as PositionCode])
 ) as Record<string, PositionCode>;
 
-// Pitch coordinates (viewBox 400x300)
 export const PITCH_COORDS: Record<PositionCode,{x:number;y:number}> = {
   GK:  { x: 50,  y: 150 },
   CB:  { x: 100, y: 150 },
@@ -141,55 +137,100 @@ export const PITCH_COORDS: Record<PositionCode,{x:number;y:number}> = {
   CF:  { x: 300, y: 150 },
 };
 
-export const ROLE_OPTIONS_BY_POSITION: Record<PositionCode, {code:string;label:string}[]> = {
+/**
+ * FM-style tactical roles with duty (Defend / Support / Attack).
+ * Each entry: { code, label, duties[] }
+ * Code is stable; UI shows "label · duty".
+ */
+export interface RoleDef {
+  code: string;
+  label: string;
+  duties: RoleDuty[];
+}
+
+export const ROLE_OPTIONS_BY_POSITION: Record<PositionCode, RoleDef[]> = {
   GK: [
-    { code:"GK_SWEEPER", label:"Portiere Sweeper" },
-    { code:"GK_SHOT_STOPPER", label:"Portiere Shot Stopper" },
+    { code: "GK_TRAD",      label: "Portiere Tradizionale", duties: ["Defend"] },
+    { code: "GK_SWEEPER",   label: "Portiere Sweeper",      duties: ["Defend", "Support", "Attack"] },
+    { code: "GK_SHOT_STOP", label: "Shot Stopper",          duties: ["Defend"] },
   ],
   CB: [
-    { code:"CB_BALL_PLAYING", label:"Difensore Palla al Piede" },
-    { code:"CB_STOPPER", label:"Stopper" },
-    { code:"CB_LIBERO", label:"Libero" },
+    { code: "CB_BALL_PLAYING", label: "Difensore Palla al Piede", duties: ["Defend", "Support"] },
+    { code: "CB_STOPPER",      label: "Stopper",                  duties: ["Defend"] },
+    { code: "CB_LIBERO",       label: "Libero",                   duties: ["Support", "Attack"] },
+    { code: "CB_NO_NONSENSE",  label: "Difensore di Contenimento", duties: ["Defend"] },
+    { code: "CB_WIDE",         label: "Difensore Largo (3 dietro)", duties: ["Defend", "Support"] },
   ],
   LB: [
-    { code:"LB_WING_BACK", label:"Wing Back" },
-    { code:"LB_INVERTED", label:"Terzino Invertito" },
-    { code:"LB_CLASSIC", label:"Terzino Classico" },
+    { code: "LB_FULL_BACK",   label: "Terzino Classico",       duties: ["Defend", "Support", "Attack"] },
+    { code: "LB_WING_BACK",   label: "Wing Back",              duties: ["Defend", "Support", "Attack"] },
+    { code: "LB_INVERTED",    label: "Terzino Invertito",      duties: ["Defend", "Support"] },
+    { code: "LB_CONTAINMENT", label: "Terzino di Contenimento", duties: ["Defend"] },
+    { code: "LB_OVERLAP",     label: "Terzino di Spinta",      duties: ["Support", "Attack"] },
+    { code: "LB_COMPLETE",    label: "Terzino Completo",       duties: ["Support", "Attack"] },
   ],
   RB: [
-    { code:"RB_WING_BACK", label:"Wing Back" },
-    { code:"RB_INVERTED", label:"Terzino Invertito" },
-    { code:"RB_CLASSIC", label:"Terzino Classico" },
+    { code: "RB_FULL_BACK",   label: "Terzino Classico",       duties: ["Defend", "Support", "Attack"] },
+    { code: "RB_WING_BACK",   label: "Wing Back",              duties: ["Defend", "Support", "Attack"] },
+    { code: "RB_INVERTED",    label: "Terzino Invertito",      duties: ["Defend", "Support"] },
+    { code: "RB_CONTAINMENT", label: "Terzino di Contenimento", duties: ["Defend"] },
+    { code: "RB_OVERLAP",     label: "Terzino di Spinta",      duties: ["Support", "Attack"] },
+    { code: "RB_COMPLETE",    label: "Terzino Completo",       duties: ["Support", "Attack"] },
   ],
   CDM: [
-    { code:"CDM_SCREEN", label:"Mediano Schermo" },
-    { code:"CDM_BOX_TO_BOX", label:"Mediano Box-to-Box" },
+    { code: "CDM_ANCHOR",     label: "Ancoraggio",         duties: ["Defend"] },
+    { code: "CDM_HALF_BACK",  label: "Half Back",          duties: ["Defend"] },
+    { code: "CDM_DLP",        label: "Regista Arretrato",  duties: ["Defend", "Support"] },
+    { code: "CDM_BALL_WIN",   label: "Ball Winning Mid",   duties: ["Defend", "Support"] },
+    { code: "CDM_DM",         label: "Mediano Schermo",    duties: ["Defend", "Support"] },
+    { code: "CDM_SEGUNDO",    label: "Segundo Volante",    duties: ["Support", "Attack"] },
   ],
   CM: [
-    { code:"CM_REGISTA", label:"Regista" },
-    { code:"CM_MEZZALA_OFF", label:"Mezzala Offensiva" },
-    { code:"CM_MEZZALA_DEF", label:"Mezzala Difensiva" },
-    { code:"CM_BOX", label:"Box-to-Box" },
+    { code: "CM_REGISTA",     label: "Regista",                 duties: ["Support"] },
+    { code: "CM_DLP",         label: "Regista Arretrato",       duties: ["Defend", "Support"] },
+    { code: "CM_AP",          label: "Rifinitore Avanzato",     duties: ["Support", "Attack"] },
+    { code: "CM_BBM",         label: "Box-to-Box",              duties: ["Support"] },
+    { code: "CM_MEZZALA",     label: "Mezzala",                 duties: ["Support", "Attack"] },
+    { code: "CM_CARRILERO",   label: "Carrilero",               duties: ["Support"] },
+    { code: "CM_ROAMING",     label: "Roaming Playmaker",       duties: ["Support"] },
+    { code: "CM_CENTRAL",     label: "Centrocampista Centrale", duties: ["Defend", "Support", "Attack"] },
   ],
   CAM: [
-    { code:"CAM_TREQUARTISTA", label:"Trequartista" },
-    { code:"CAM_SHADOW", label:"Shadow Striker" },
+    { code: "CAM_TREQ",       label: "Trequartista",            duties: ["Support", "Attack"] },
+    { code: "CAM_AP",         label: "Rifinitore Avanzato",     duties: ["Support", "Attack"] },
+    { code: "CAM_SHADOW",     label: "Shadow Striker",          duties: ["Attack"] },
+    { code: "CAM_ENGANCHE",   label: "Enganche",                duties: ["Support"] },
+    { code: "CAM_AM",         label: "Centrocampista Offensivo", duties: ["Support", "Attack"] },
   ],
   LW: [
-    { code:"LW_WINGER", label:"Ala Pura" },
-    { code:"LW_INVERTED", label:"Ala Accentrante" },
+    { code: "LW_WINGER",      label: "Ala Pura",                duties: ["Support", "Attack"] },
+    { code: "LW_INVERTED",    label: "Ala Accentrante",         duties: ["Support", "Attack"] },
+    { code: "LW_DEFENSIVE",   label: "Ala Difensiva",           duties: ["Defend", "Support"] },
+    { code: "LW_IF",          label: "Inside Forward",          duties: ["Support", "Attack"] },
+    { code: "LW_RAUMDEUTER",  label: "Raumdeuter",              duties: ["Attack"] },
+    { code: "LW_TARGET_WIDE", label: "Esterno di Sfondamento",  duties: ["Attack"] },
   ],
   RW: [
-    { code:"RW_WINGER", label:"Ala Pura" },
-    { code:"RW_INVERTED", label:"Ala Accentrante" },
+    { code: "RW_WINGER",      label: "Ala Pura",                duties: ["Support", "Attack"] },
+    { code: "RW_INVERTED",    label: "Ala Accentrante",         duties: ["Support", "Attack"] },
+    { code: "RW_DEFENSIVE",   label: "Ala Difensiva",           duties: ["Defend", "Support"] },
+    { code: "RW_IF",          label: "Inside Forward",          duties: ["Support", "Attack"] },
+    { code: "RW_RAUMDEUTER",  label: "Raumdeuter",              duties: ["Attack"] },
+    { code: "RW_TARGET_WIDE", label: "Esterno di Sfondamento",  duties: ["Attack"] },
   ],
   ST: [
-    { code:"ST_PRESSING", label:"Prima Punta di Pressione" },
-    { code:"ST_TARGET", label:"Centravanti Target" },
+    { code: "ST_TARGET",      label: "Centravanti Target",      duties: ["Attack", "Support"] },
+    { code: "ST_PRESSING",    label: "Punta di Pressione",      duties: ["Defend", "Attack"] },
+    { code: "ST_POACHER",     label: "Poacher",                 duties: ["Attack"] },
+    { code: "ST_DLF",         label: "Punta Arretrata",         duties: ["Support", "Attack"] },
+    { code: "ST_COMPLETE",    label: "Centravanti Completo",    duties: ["Support", "Attack"] },
+    { code: "ST_ADVANCED",    label: "Punta Avanzata",          duties: ["Attack"] },
   ],
   CF: [
-    { code:"CF_FALSE_9", label:"Falso Nueve" },
-    { code:"CF_SECONDA_PUNTA", label:"Seconda Punta" },
+    { code: "CF_FALSE_9",     label: "Falso Nueve",             duties: ["Support"] },
+    { code: "CF_SECONDA",     label: "Seconda Punta",           duties: ["Support", "Attack"] },
+    { code: "CF_DLF",         label: "Punta Arretrata",         duties: ["Support", "Attack"] },
+    { code: "CF_TREQ_PUNTA",  label: "Trequartista-Punta",      duties: ["Support"] },
   ],
 };
 
@@ -197,7 +238,10 @@ export const ALL_TAGS = [
   "HIGH POTENTIAL","LOW COST","READY","MONITOR","RISKY","TOP PROSPECT",
 ] as const;
 
-export const FORMATIONS = ["4-3-3","4-2-3-1","4-4-2","3-5-2","3-4-3","5-3-2","4-1-4-1"];
+export const FORMATIONS = [
+  "4-3-3", "4-2-3-1", "4-4-2", "4-3-1-2", "4-1-4-1", "4-5-1",
+  "3-5-2", "3-4-3", "3-4-1-2", "5-3-2", "5-4-1",
+];
 
 export const REGIONS = [
   "Puglia","Campania","Basilicata","Calabria","Sicilia","Sardegna","Lazio",
