@@ -232,6 +232,9 @@ export interface Player {
   video_url?: string;
   videos?: PlayerVideo[];
   raw_report?: string;
+  stats?: PlayerStats;
+  stats_source?: string;
+  stats_season?: string;
   observations?: Observation[];
   heatmap?: Heatmap;
   formations_played?: string[];
