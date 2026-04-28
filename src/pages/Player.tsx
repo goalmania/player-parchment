@@ -12,6 +12,7 @@ import ObservationForm from "@/components/ObservationForm";
 import SimilarPlayers from "@/components/SimilarPlayers";
 import ShortlistButton from "@/components/ShortlistButton";
 import VideoGallery from "@/components/VideoGallery";
+import StatsDisplay from "@/components/StatsDisplay";
 import { buildShareLink } from "@/lib/share";
 import { useAuth } from "@/lib/auth";
 import type { Observation } from "@/lib/types";
@@ -213,6 +214,14 @@ export default function Player() {
           ))}
         </div>
       </section>
+
+      {/* Statistiche */}
+      {player.stats && Object.keys(player.stats).length > 0 && (
+        <section className="container pb-10">
+          <div className="section-label mb-3">// STATISTICHE STAGIONALI</div>
+          <StatsDisplay stats={player.stats} source={player.stats_source} season={player.stats_season} />
+        </section>
+      )}
 
       {/* Analisi */}
       <section className="container pb-10 grid lg:grid-cols-3 gap-px bg-border/10 border-hairline">

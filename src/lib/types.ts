@@ -35,6 +35,134 @@ export interface PlayerVideo {
   kind: "youtube" | "vimeo" | "file" | "external";
 }
 
+/** Comprehensive FM-style stats. All optional, all numeric (current season). */
+export interface PlayerStats {
+  // Apparizioni
+  matches?: number;
+  matches_started?: number;
+  minutes?: number;
+  // Disciplina
+  yellow_cards?: number;
+  red_cards?: number;
+  // Offensive
+  goals?: number;
+  assists?: number;
+  shots?: number;
+  shots_on_target?: number;
+  xg?: number;
+  xa?: number;
+  npxg?: number;
+  goal_conversion?: number; // %
+  penalties_scored?: number;
+  penalties_taken?: number;
+  // Passing
+  passes?: number;
+  passes_completed?: number;
+  pass_accuracy?: number; // %
+  key_passes?: number;
+  through_balls?: number;
+  long_balls?: number;
+  long_ball_accuracy?: number;
+  crosses?: number;
+  crosses_completed?: number;
+  // Possesso / dribbling
+  touches?: number;
+  dribbles?: number;
+  dribbles_completed?: number;
+  dribble_success?: number; // %
+  progressive_carries?: number;
+  progressive_passes?: number;
+  // Difensivi
+  tackles?: number;
+  tackles_won?: number;
+  interceptions?: number;
+  blocks?: number;
+  clearances?: number;
+  duels_won?: number;
+  duels_total?: number;
+  aerial_duels_won?: number;
+  aerial_duels_total?: number;
+  fouls_committed?: number;
+  fouls_drawn?: number;
+  // Atletici
+  distance_km?: number;
+  sprints?: number;
+  top_speed_kmh?: number;
+  // Portieri
+  saves?: number;
+  clean_sheets?: number;
+  goals_conceded?: number;
+  save_pct?: number;
+  // Rating medio
+  avg_rating?: number;
+}
+
+export const STATS_GROUPS: { key: string; label: string; fields: { k: keyof PlayerStats; label: string; unit?: string }[] }[] = [
+  { key: "apps", label: "Apparizioni", fields: [
+    { k: "matches", label: "Partite" },
+    { k: "matches_started", label: "Da titolare" },
+    { k: "minutes", label: "Minuti" },
+    { k: "avg_rating", label: "Voto medio" },
+    { k: "yellow_cards", label: "Gialli" },
+    { k: "red_cards", label: "Rossi" },
+  ]},
+  { key: "off", label: "Offensive", fields: [
+    { k: "goals", label: "Gol" },
+    { k: "assists", label: "Assist" },
+    { k: "shots", label: "Tiri" },
+    { k: "shots_on_target", label: "Tiri in porta" },
+    { k: "xg", label: "xG" },
+    { k: "xa", label: "xA" },
+    { k: "npxg", label: "npxG" },
+    { k: "goal_conversion", label: "Conv. gol", unit: "%" },
+    { k: "penalties_scored", label: "Rigori segnati" },
+    { k: "penalties_taken", label: "Rigori battuti" },
+  ]},
+  { key: "pass", label: "Passaggi", fields: [
+    { k: "passes", label: "Passaggi" },
+    { k: "passes_completed", label: "Riusciti" },
+    { k: "pass_accuracy", label: "Precisione", unit: "%" },
+    { k: "key_passes", label: "Passaggi chiave" },
+    { k: "through_balls", label: "Filtranti" },
+    { k: "long_balls", label: "Lanci lunghi" },
+    { k: "long_ball_accuracy", label: "Prec. lanci", unit: "%" },
+    { k: "crosses", label: "Cross" },
+    { k: "crosses_completed", label: "Cross riusciti" },
+    { k: "progressive_passes", label: "Pass. progressivi" },
+  ]},
+  { key: "poss", label: "Possesso & Dribbling", fields: [
+    { k: "touches", label: "Tocchi" },
+    { k: "dribbles", label: "Dribbling tentati" },
+    { k: "dribbles_completed", label: "Dribbling riusciti" },
+    { k: "dribble_success", label: "Successo dribbling", unit: "%" },
+    { k: "progressive_carries", label: "Conduzioni progr." },
+  ]},
+  { key: "def", label: "Difensive", fields: [
+    { k: "tackles", label: "Contrasti" },
+    { k: "tackles_won", label: "Contrasti vinti" },
+    { k: "interceptions", label: "Intercetti" },
+    { k: "blocks", label: "Blocchi" },
+    { k: "clearances", label: "Spazzate" },
+    { k: "duels_won", label: "Duelli vinti" },
+    { k: "duels_total", label: "Duelli totali" },
+    { k: "aerial_duels_won", label: "Aerei vinti" },
+    { k: "aerial_duels_total", label: "Aerei totali" },
+    { k: "fouls_committed", label: "Falli commessi" },
+    { k: "fouls_drawn", label: "Falli subiti" },
+  ]},
+  { key: "ath", label: "Atletici", fields: [
+    { k: "distance_km", label: "Distanza", unit: "km" },
+    { k: "sprints", label: "Sprint" },
+    { k: "top_speed_kmh", label: "Velocità top", unit: "km/h" },
+  ]},
+  { key: "gk", label: "Portiere", fields: [
+    { k: "saves", label: "Parate" },
+    { k: "clean_sheets", label: "Clean sheets" },
+    { k: "goals_conceded", label: "Gol subiti" },
+    { k: "save_pct", label: "% parate", unit: "%" },
+  ]},
+];
+
 export interface Player {
   id: string;
   owner_id?: string;
@@ -104,6 +232,9 @@ export interface Player {
   video_url?: string;
   videos?: PlayerVideo[];
   raw_report?: string;
+  stats?: PlayerStats;
+  stats_source?: string;
+  stats_season?: string;
   observations?: Observation[];
   heatmap?: Heatmap;
   formations_played?: string[];

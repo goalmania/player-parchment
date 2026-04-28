@@ -2,3 +2,9 @@ project_id = "hmsdmpvstqpfuwkslpnc"
 
 [functions.ai-report]
 verify_jwt = false
+
+[functions.parse-report-file]
+verify_jwt = false
+
+[functions.import-stats]
+verify_jwt = false

@@ -1,0 +1,4 @@
+ALTER TABLE public.players
+ADD COLUMN IF NOT EXISTS stats JSONB NOT NULL DEFAULT '{}'::jsonb,
+ADD COLUMN IF NOT EXISTS stats_source TEXT,
+ADD COLUMN IF NOT EXISTS stats_season TEXT;
