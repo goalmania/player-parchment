@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import PageShell from "@/components/PageShell";
 import ReportForm from "@/components/ReportForm";
 import { popAiDraft } from "@/lib/storage";
+import UploadReportButton from "@/components/UploadReportButton";
 import type { Player } from "@/lib/types";
 
 export default function AddReport() {
@@ -19,11 +20,14 @@ export default function AddReport() {
         {/* Compilazione automatica - CTA primaria, ben visibile */}
         <div className="mb-8 p-5 border-hairline bg-gradient-to-br from-accent-lime/10 to-transparent">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <div className="font-display font-bold text-lg uppercase mb-1">⚡ Compila da testo scout</div>
-              <p className="text-sm text-gray-soft">Incolla il tuo report testuale e genera automaticamente tutti i campi: ruoli tattici, valutazioni, tag, punti di forza, verdetto e altro.</p>
+            <div className="flex-1">
+              <div className="font-display font-bold text-lg uppercase mb-1">⚡ Compila automaticamente</div>
+              <p className="text-sm text-gray-soft">Carica un report (PDF / DOCX / TXT) <strong className="text-foreground">oppure</strong> incolla il testo: l'AI compila tutti i campi (ruoli tattici, valutazioni, tag, verdetto…).</p>
             </div>
-            <Link to="/ai-report" className="dm-btn-primary whitespace-nowrap">Compila automaticamente →</Link>
+            <div className="flex flex-wrap gap-2">
+              <UploadReportButton />
+              <Link to="/ai-report" className="dm-btn-primary whitespace-nowrap">Incolla testo →</Link>
+            </div>
           </div>
         </div>
 
