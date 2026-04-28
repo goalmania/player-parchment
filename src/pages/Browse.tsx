@@ -1,6 +1,6 @@
 /**
- * Browse other scouts' player databases.
- * Lists all profiles + their public player names so the user can request access.
+ * Browse other scouts. Lists all profiles + already-shared reports.
+ * Send access requests by player ID (shared by the owner offline / via "Condividi link").
  */
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, Link } from "react-router-dom";
@@ -40,7 +40,6 @@ export default function Browse() {
       const [{ data: profs }, { data: reqs }, { data: pls }] = await Promise.all([
         supabase.from("profiles").select("user_id, org_type, org_name, display_name").neq("user_id", user.id),
         supabase.from("access_requests").select("player_id, status").eq("requester_id", user.id),
-        // Players visible to me thanks to RLS (own + accepted requests). Filter out my own.
         supabase.from("players").select("id, name, position_code, club, age, owner_id").neq("owner_id", user.id),
       ]);
       setProfiles((profs as any) || []);
@@ -67,6 +66,31 @@ export default function Browse() {
     });
   }, [profiles, search, orgFilter]);
 
+  const requestAccess = async (ownerId: string, orgName: string) => {
+    if (!user) return;
+    const playerId = prompt(
+      `Inserisci l'ID del report di ${orgName} per cui richiedere l'accesso.\n\n(Il proprietario può condividere l'ID dalla pagina del giocatore tramite "Condividi".)`
+    );
+    if (!playerId?.trim()) return;
+    const id = playerId.trim();
+    if (requestedIds.has(id) || accessibleIds.has(id)) {
+      toast.info("Richiesta già inviata o accesso già concesso.");
+      return;
+    }
+    const { error } = await supabase.from("access_requests").insert({
+      player_id: id,
+      requester_id: user.id,
+      owner_id: ownerId,
+      message: `Richiesta accesso al report.`,
+    } as any);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Richiesta inviata. Attendi conferma del proprietario.");
+      setRequestedIds((s) => new Set([...s, id]));
+    }
+  };
+
   if (loading) return <PageShell><div className="container py-20 text-center text-gray-soft">Caricamento…</div></PageShell>;
   if (!user) return <Navigate to="/auth" replace />;
 
@@ -76,7 +100,7 @@ export default function Browse() {
         <div className="section-label mb-3">// ESPLORA</div>
         <h1 className="font-display font-black uppercase text-4xl md:text-5xl mb-2">Altri Scout</h1>
         <p className="text-gray-soft mb-8">
-          Sfoglia agenzie e club. Trova un report che ti interessa e richiedi l'accesso al proprietario.
+          Sfoglia agenzie e club registrati. Richiedi l'accesso a un report incollando l'ID condiviso dal proprietario.
         </p>
 
         <div className="flex flex-wrap gap-3 mb-6">
@@ -97,7 +121,7 @@ export default function Browse() {
           <div className="mb-8">
             <div className="section-label mb-3">// REPORT CONDIVISI CON TE</div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border/10 border-hairline">
-              {accessiblePlayers.filter((p) => accessibleIds.has(p.id)).map((p) => (
+              {accessiblePlayers.map((p) => (
                 <Link
                   key={p.id}
                   to={`/player?id=${p.id}`}
@@ -111,15 +135,20 @@ export default function Browse() {
           </div>
         )}
 
-        <div className="space-y-6">
+        <div className="space-y-3">
           {filteredProfiles.map((prof) => (
-            <ProfileBlock
-              key={prof.user_id}
-              profile={prof}
-              requestedIds={requestedIds}
-              accessibleIds={accessibleIds}
-              onRequested={(pid) => setRequestedIds((s) => new Set([...s, pid]))}
-            />
+            <div key={prof.user_id} className="dm-card p-5 flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <div className="text-xs font-mono uppercase tracking-[0.18rem] text-accent-lime mb-1">
+                  {prof.org_type === "agency" ? "AGENZIA" : "CLUB"}
+                </div>
+                <div className="font-display font-bold text-xl uppercase">{prof.org_name}</div>
+                {prof.display_name && <div className="text-sm text-gray-soft">{prof.display_name}</div>}
+              </div>
+              <button onClick={() => requestAccess(prof.user_id, prof.org_name)} className="dm-btn-primary !py-1.5 !px-3 text-xs">
+                📨 Richiedi un report
+              </button>
+            </div>
           ))}
           {filteredProfiles.length === 0 && (
             <div className="dm-card p-10 text-center text-gray-soft">Nessun altro scout trovato.</div>
@@ -127,91 +156,5 @@ export default function Browse() {
         </div>
       </section>
     </PageShell>
-  );
-}
-
-function ProfileBlock({
-  profile,
-  requestedIds,
-  accessibleIds,
-  onRequested,
-}: {
-  profile: ProfileLite;
-  requestedIds: Set<string>;
-  accessibleIds: Set<string>;
-  onRequested: (id: string) => void;
-}) {
-  const { user } = useAuth();
-  const [open, setOpen] = useState(false);
-  const [players, setPlayers] = useState<PublicPlayer[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const load = async () => {
-    if (players.length > 0 || loading) return;
-    setLoading(true);
-    // Note: RLS will only return players this user has access to (own + accepted).
-    // To list other scouts' player names we need a public view OR rely on the player owner sharing.
-    // For now we surface accepted-access players; pending requests show as "in attesa".
-    // In future: add a "public_players_index" view. For MVP, scout requests by name.
-    setLoading(false);
-  };
-
-  const requestByName = async () => {
-    const playerName = prompt("Nome del giocatore di cui richiedere il report:");
-    if (!playerName?.trim() || !user) return;
-    // Look up player by owner + name (server-side check; user can't read other players directly)
-    const { data, error } = await supabase
-      .from("players")
-      .select("id, name")
-      .eq("owner_id", profile.user_id)
-      .ilike("name", `%${playerName.trim()}%`)
-      .limit(5);
-
-    // We can't actually read other people's players via RLS; this is a UX placeholder.
-    // Insert request blindly using a known UUID flow won't work. So instead we rely on
-    // an RPC. For MVP we let the user paste a player ID shared by the owner offline.
-    if (error || !data || data.length === 0) {
-      const playerId = prompt("Non trovato direttamente. Incolla l'ID del report (richiedibile al proprietario):");
-      if (!playerId) return;
-      const { error: insErr } = await supabase.from("access_requests").insert({
-        player_id: playerId.trim(),
-        requester_id: user.id,
-        owner_id: profile.user_id,
-        message: `Richiesta accesso a "${playerName}"`,
-      } as any);
-      if (insErr) toast.error(insErr.message);
-      else { toast.success("Richiesta inviata"); onRequested(playerId.trim()); }
-      return;
-    }
-
-    // (RLS will block this normally — kept for future when a public index exists)
-    const target = data[0];
-    const { error: insErr } = await supabase.from("access_requests").insert({
-      player_id: target.id,
-      requester_id: user.id,
-      owner_id: profile.user_id,
-      message: `Richiesta accesso a "${target.name}"`,
-    } as any);
-    if (insErr) toast.error(insErr.message);
-    else { toast.success("Richiesta inviata"); onRequested(target.id); }
-  };
-
-  return (
-    <div className="dm-card p-5">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="text-xs font-mono uppercase tracking-[0.18rem] text-accent-lime mb-1">
-            {profile.org_type === "agency" ? "AGENZIA" : "CLUB"}
-          </div>
-          <div className="font-display font-bold text-xl uppercase">{profile.org_name}</div>
-          {profile.display_name && <div className="text-sm text-gray-soft">{profile.display_name}</div>}
-        </div>
-        <div className="flex gap-2">
-          <button onClick={requestByName} className="dm-btn-primary !py-1.5 !px-3 text-xs">
-            📨 Richiedi un report
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
