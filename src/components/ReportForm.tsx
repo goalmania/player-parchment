@@ -9,6 +9,7 @@ import { deletePlayer, nextNum, savePlayer } from "@/lib/storage";
 import Stars from "@/components/Stars";
 import HeatmapEditor, { heatmapFromPosition } from "@/components/HeatmapEditor";
 import VideoManager from "@/components/VideoManager";
+import StatsEditor from "@/components/StatsEditor";
 import { toast } from "sonner";
 
 interface Props {
@@ -421,6 +422,16 @@ export default function ReportForm({ initial, mode }: Props) {
             onChange={(videos) => update("videos", videos)}
           />
         </div>
+      </Section>
+
+      {/* SECTION J — STATISTICHE */}
+      <Section label="// J · STATISTICHE STAGIONALI">
+        <StatsEditor
+          value={data.stats || {}}
+          source={data.stats_source}
+          season={data.stats_season}
+          onChange={(stats, meta) => setData((d) => ({ ...d, stats, stats_source: meta.source, stats_season: meta.season }))}
+        />
       </Section>
 
       <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-hairline-t">
