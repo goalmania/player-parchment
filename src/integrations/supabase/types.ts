@@ -88,6 +88,9 @@ export type Database = {
           region: string | null
           skills: Json | null
           stars: Json | null
+          stats: Json
+          stats_season: string | null
+          stats_source: string | null
           strengths: Json | null
           summary: string | null
           tactical_roles: Json | null
@@ -131,6 +134,9 @@ export type Database = {
           region?: string | null
           skills?: Json | null
           stars?: Json | null
+          stats?: Json
+          stats_season?: string | null
+          stats_source?: string | null
           strengths?: Json | null
           summary?: string | null
           tactical_roles?: Json | null
@@ -174,6 +180,9 @@ export type Database = {
           region?: string | null
           skills?: Json | null
           stars?: Json | null
+          stats?: Json
+          stats_season?: string | null
+          stats_source?: string | null
           strengths?: Json | null
           summary?: string | null
           tactical_roles?: Json | null
