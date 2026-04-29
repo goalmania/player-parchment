@@ -4,6 +4,7 @@ import PageShell from "@/components/PageShell";
 import { usePlayers } from "@/lib/usePlayers";
 import { TagPill, VerdictBadge } from "@/components/PlayerCard";
 import type { Player } from "@/lib/types";
+import { POSITION_CODES, POSITION_LABEL } from "@/lib/types";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster";
