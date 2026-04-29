@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { usePlayers } from "@/lib/usePlayers";
@@ -6,7 +6,8 @@ import { popCompareSeed } from "@/lib/storage";
 import RadarChart from "@/components/RadarChart";
 import { TagPill, VerdictBadge } from "@/components/PlayerCard";
 import type { Player, PlayerStats } from "@/lib/types";
-import { STATS_GROUPS, STATS_MATCH_GROUPS } from "@/lib/types";
+import { STATS_GROUPS, STATS_MATCH_GROUPS, POSITION_CODES, POSITION_LABEL } from "@/lib/types";
+import { toast } from "sonner";
 
 const PALETTE = [
   "hsl(71 100% 47%)",   // lime
@@ -24,6 +25,11 @@ export default function Compare() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [pickerId, setPickerId] = useState<string>("");
   const [statsScope, setStatsScope] = useState<"season" | "match">("season");
+  const [pickerSearch, setPickerSearch] = useState("");
+  const [pickerPos, setPickerPos] = useState<string>("all");
+  const [pickerClub, setPickerClub] = useState<string>("all");
+  const [exporting, setExporting] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
 
   // Seed dal database con eventuale player iniziale
   useEffect(() => {
