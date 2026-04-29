@@ -459,7 +459,7 @@ export default function Compare() {
                 </Link>
               ))}
             </div>
-          </>
+          </div>
         )}
       </section>
     </PageShell>
