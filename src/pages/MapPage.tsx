@@ -48,10 +48,28 @@ export default function MapPage() {
   const players = usePlayers();
   const [view, setView] = useState<View>("italy");
   const [filterVerdict, setFilterVerdict] = useState<string>("all");
+  const [filterRegion, setFilterRegion] = useState<string>("all");
+  const [filterPosition, setFilterPosition] = useState<string>("all");
+  const [filterClub, setFilterClub] = useState<string>("all");
+
+  const regionOptions = useMemo(
+    () => Array.from(new Set(players.map((p) => p.region).filter(Boolean))).sort(),
+    [players]
+  );
+  const clubOptions = useMemo(
+    () => Array.from(new Set(players.map((p) => p.club).filter(Boolean))).sort(),
+    [players]
+  );
 
   const filtered = useMemo(
-    () => players.filter((p) => (filterVerdict === "all" || p.verdict_type === filterVerdict) && Number.isFinite(p.lat) && Number.isFinite(p.lng)),
-    [players, filterVerdict]
+    () => players.filter((p) =>
+      Number.isFinite(p.lat) && Number.isFinite(p.lng) &&
+      (filterVerdict === "all" || p.verdict_type === filterVerdict) &&
+      (filterRegion === "all" || p.region === filterRegion) &&
+      (filterPosition === "all" || p.position_code === filterPosition) &&
+      (filterClub === "all" || p.club === filterClub)
+    ),
+    [players, filterVerdict, filterRegion, filterPosition, filterClub]
   );
 
   const stats = useMemo(() => {
@@ -59,6 +77,10 @@ export default function MapPage() {
     const leagues = new Set(filtered.map((p) => p.league).filter(Boolean));
     return { regions: regions.size, leagues: leagues.size };
   }, [filtered]);
+
+  const resetFilters = () => {
+    setFilterVerdict("all"); setFilterRegion("all"); setFilterPosition("all"); setFilterClub("all");
+  };
 
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
