@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { STATS_GROUPS } from "@/lib/types";
+import { STATS_GROUPS, STATS_MATCH_GROUPS } from "@/lib/types";
 import type { PlayerStats } from "@/lib/types";
 import { toast } from "sonner";
 
