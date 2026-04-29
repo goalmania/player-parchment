@@ -452,13 +452,16 @@ export default function Compare() {
               ))}
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {selected.map((p) => (
-                <Link key={p.id} to={`/player?id=${p.id}`} className="dm-btn-outline text-xs">
-                  → {p.name.split(" ")[0]}
-                </Link>
-              ))}
-            </div>
+          </div>
+        )}
+
+        {selected.length >= 2 && (
+          <div className="flex flex-wrap gap-2 mt-4">
+            {selected.map((p) => (
+              <Link key={p.id} to={`/player?id=${p.id}`} className="dm-btn-outline text-xs">
+                → {p.name.split(" ")[0]}
+              </Link>
+            ))}
           </div>
         )}
       </section>
