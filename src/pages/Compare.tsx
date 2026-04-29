@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { usePlayers } from "@/lib/usePlayers";
@@ -6,7 +6,8 @@ import { popCompareSeed } from "@/lib/storage";
 import RadarChart from "@/components/RadarChart";
 import { TagPill, VerdictBadge } from "@/components/PlayerCard";
 import type { Player, PlayerStats } from "@/lib/types";
-import { STATS_GROUPS, STATS_MATCH_GROUPS } from "@/lib/types";
+import { STATS_GROUPS, STATS_MATCH_GROUPS, POSITION_CODES, POSITION_LABEL } from "@/lib/types";
+import { toast } from "sonner";
 
 const PALETTE = [
   "hsl(71 100% 47%)",   // lime
@@ -24,6 +25,11 @@ export default function Compare() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [pickerId, setPickerId] = useState<string>("");
   const [statsScope, setStatsScope] = useState<"season" | "match">("season");
+  const [pickerSearch, setPickerSearch] = useState("");
+  const [pickerPos, setPickerPos] = useState<string>("all");
+  const [pickerClub, setPickerClub] = useState<string>("all");
+  const [exporting, setExporting] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
 
   // Seed dal database con eventuale player iniziale
   useEffect(() => {
@@ -43,9 +49,23 @@ export default function Compare() {
     [selectedIds, players]
   );
 
+  const clubOptions = useMemo(
+    () => Array.from(new Set(players.map((p) => p.club).filter(Boolean))).sort(),
+    [players]
+  );
+
   const available = useMemo(
-    () => players.filter((p) => !selectedIds.includes(p.id)),
-    [players, selectedIds]
+    () => players.filter((p) => {
+      if (selectedIds.includes(p.id)) return false;
+      if (pickerPos !== "all" && p.position_code !== pickerPos) return false;
+      if (pickerClub !== "all" && p.club !== pickerClub) return false;
+      if (pickerSearch) {
+        const s = pickerSearch.toLowerCase();
+        if (![p.name, p.club, p.position_main].some((v) => (v || "").toLowerCase().includes(s))) return false;
+      }
+      return true;
+    }),
+    [players, selectedIds, pickerPos, pickerClub, pickerSearch]
   );
 
   const addPlayer = () => {
@@ -54,6 +74,49 @@ export default function Compare() {
     setPickerId("");
   };
   const removePlayer = (id: string) => setSelectedIds((s) => s.filter((x) => x !== id));
+
+  const exportPDF = async () => {
+    if (!exportRef.current || selected.length < 2) return;
+    setExporting(true);
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+      // Aspetta paint
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      const canvas = await html2canvas(exportRef.current, {
+        backgroundColor: "#0a0a0a",
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgW = pageW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+
+      let heightLeft = imgH;
+      let position = 0;
+      pdf.addImage(imgData, "JPEG", 0, position, imgW, imgH);
+      heightLeft -= pageH;
+      while (heightLeft > 0) {
+        position = heightLeft - imgH;
+        pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, position, imgW, imgH);
+        heightLeft -= pageH;
+      }
+      const names = selected.map((p) => p.name.split(" ")[0]).join("-vs-");
+      pdf.save(`confronto-${names}-${new Date().toISOString().slice(0, 10)}.pdf`);
+      toast.success("PDF esportato ✓");
+    } catch (e: any) {
+      toast.error(e?.message || "Export PDF fallito");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const colorFor = (i: number) => PALETTE[i % PALETTE.length];
 
@@ -126,14 +189,38 @@ export default function Compare() {
             ))}
           </div>
           {selected.length < MAX_PLAYERS && (
-            <div className="flex gap-2">
-              <select className="dm-input flex-1" value={pickerId} onChange={(e) => setPickerId(e.target.value)}>
-                <option value="">— Aggiungi giocatore —</option>
-                {available.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.club || "—"} · {p.position_main}</option>)}
-              </select>
-              <button onClick={addPlayer} disabled={!pickerId} className="dm-btn-primary disabled:opacity-50">+ Aggiungi</button>
-              {selected.length > 0 && (
-                <button onClick={() => setSelectedIds([])} className="dm-btn-outline">Pulisci</button>
+            <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <input
+                  className="dm-input"
+                  placeholder="🔍 Cerca nome, club, ruolo…"
+                  value={pickerSearch}
+                  onChange={(e) => setPickerSearch(e.target.value)}
+                />
+                <select className="dm-input" value={pickerPos} onChange={(e) => setPickerPos(e.target.value)}>
+                  <option value="all">Tutti i ruoli</option>
+                  {POSITION_CODES.map((c) => <option key={c} value={c}>{c} · {POSITION_LABEL[c]}</option>)}
+                </select>
+                <select className="dm-input" value={pickerClub} onChange={(e) => setPickerClub(e.target.value)}>
+                  <option value="all">Tutti i club</option>
+                  {clubOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <select className="dm-input flex-1" value={pickerId} onChange={(e) => setPickerId(e.target.value)}>
+                  <option value="">— Aggiungi giocatore ({available.length} disponibili) —</option>
+                  {available.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.club || "—"} · {p.position_main}</option>)}
+                </select>
+                <button onClick={addPlayer} disabled={!pickerId} className="dm-btn-primary disabled:opacity-50">+ Aggiungi</button>
+                {selected.length > 0 && (
+                  <button onClick={() => setSelectedIds([])} className="dm-btn-outline">Pulisci</button>
+                )}
+              </div>
+              {(pickerPos !== "all" || pickerClub !== "all" || pickerSearch) && (
+                <button
+                  onClick={() => { setPickerSearch(""); setPickerPos("all"); setPickerClub("all"); }}
+                  className="text-xs font-mono text-gray-soft hover:text-foreground underline"
+                >↺ Reset filtri ricerca</button>
               )}
             </div>
           )}
@@ -142,6 +229,14 @@ export default function Compare() {
           )}
         </div>
 
+        {selected.length >= 2 && (
+          <div className="flex justify-end mb-4">
+            <button onClick={exportPDF} disabled={exporting} className="dm-btn-primary disabled:opacity-50">
+              {exporting ? "Esportazione…" : "📄 Esporta PDF"}
+            </button>
+          </div>
+        )}
+
         {selected.length < 2 && (
           <div className="dm-card p-10 text-center text-gray-soft">
             Seleziona almeno 2 giocatori per iniziare il confronto.
@@ -149,7 +244,7 @@ export default function Compare() {
         )}
 
         {selected.length >= 2 && (
-          <>
+          <div ref={exportRef} className="bg-background">
             {/* HEADER CARDS */}
             <div className="grid gap-px bg-border/10 border-hairline mb-6"
               style={{ gridTemplateColumns: `repeat(${selected.length}, minmax(0, 1fr))` }}>
@@ -357,14 +452,17 @@ export default function Compare() {
               ))}
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {selected.map((p) => (
-                <Link key={p.id} to={`/player?id=${p.id}`} className="dm-btn-outline text-xs">
-                  → {p.name.split(" ")[0]}
-                </Link>
-              ))}
-            </div>
-          </>
+          </div>
+        )}
+
+        {selected.length >= 2 && (
+          <div className="flex flex-wrap gap-2 mt-4">
+            {selected.map((p) => (
+              <Link key={p.id} to={`/player?id=${p.id}`} className="dm-btn-outline text-xs">
+                → {p.name.split(" ")[0]}
+              </Link>
+            ))}
+          </div>
         )}
       </section>
     </PageShell>
