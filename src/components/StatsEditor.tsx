@@ -15,6 +15,7 @@ export default function StatsEditor({ value, source, season, onChange }: Props) 
   const [importInput, setImportInput] = useState("");
   const [importing, setImporting] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [scope, setScope] = useState<"season" | "match">("season");
 
   const setField = (k: keyof PlayerStats, v: string) => {
     const next: PlayerStats = { ...value };
