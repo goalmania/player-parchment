@@ -4,6 +4,7 @@ import PageShell from "@/components/PageShell";
 import { usePlayers } from "@/lib/usePlayers";
 import { TagPill, VerdictBadge } from "@/components/PlayerCard";
 import type { Player } from "@/lib/types";
+import { POSITION_CODES, POSITION_LABEL } from "@/lib/types";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster";
@@ -47,10 +48,28 @@ export default function MapPage() {
   const players = usePlayers();
   const [view, setView] = useState<View>("italy");
   const [filterVerdict, setFilterVerdict] = useState<string>("all");
+  const [filterRegion, setFilterRegion] = useState<string>("all");
+  const [filterPosition, setFilterPosition] = useState<string>("all");
+  const [filterClub, setFilterClub] = useState<string>("all");
+
+  const regionOptions = useMemo(
+    () => Array.from(new Set(players.map((p) => p.region).filter(Boolean))).sort(),
+    [players]
+  );
+  const clubOptions = useMemo(
+    () => Array.from(new Set(players.map((p) => p.club).filter(Boolean))).sort(),
+    [players]
+  );
 
   const filtered = useMemo(
-    () => players.filter((p) => (filterVerdict === "all" || p.verdict_type === filterVerdict) && Number.isFinite(p.lat) && Number.isFinite(p.lng)),
-    [players, filterVerdict]
+    () => players.filter((p) =>
+      Number.isFinite(p.lat) && Number.isFinite(p.lng) &&
+      (filterVerdict === "all" || p.verdict_type === filterVerdict) &&
+      (filterRegion === "all" || p.region === filterRegion) &&
+      (filterPosition === "all" || p.position_code === filterPosition) &&
+      (filterClub === "all" || p.club === filterClub)
+    ),
+    [players, filterVerdict, filterRegion, filterPosition, filterClub]
   );
 
   const stats = useMemo(() => {
@@ -58,6 +77,10 @@ export default function MapPage() {
     const leagues = new Set(filtered.map((p) => p.league).filter(Boolean));
     return { regions: regions.size, leagues: leagues.size };
   }, [filtered]);
+
+  const resetFilters = () => {
+    setFilterVerdict("all"); setFilterRegion("all"); setFilterPosition("all"); setFilterClub("all");
+  };
 
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -135,17 +158,47 @@ export default function MapPage() {
         <h1 className="font-display font-black uppercase text-4xl md:text-5xl mb-2">Distribuzione Profili</h1>
         <p className="text-gray-soft mb-6">{filtered.length} giocatori · {stats.regions} regioni · {stats.leagues} campionati</p>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div className="flex border-hairline">
-            <button onClick={() => setView("italy")} className={`px-4 py-2 font-mono text-xs uppercase tracking-[0.12rem] ${view === "italy" ? "bg-accent text-background" : "text-gray-soft"}`}>🇮🇹 Italia</button>
-            <button onClick={() => setView("world")} className={`px-4 py-2 font-mono text-xs uppercase tracking-[0.12rem] ${view === "world" ? "bg-accent text-background" : "text-gray-soft"}`}>🌍 Mondo</button>
+        <div className="border-hairline p-3 mb-4 space-y-3 bg-gray-light/40">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex border-hairline">
+              <button onClick={() => setView("italy")} className={`px-4 py-2 font-mono text-xs uppercase tracking-[0.12rem] ${view === "italy" ? "bg-accent text-background" : "text-gray-soft"}`}>🇮🇹 Italia</button>
+              <button onClick={() => setView("world")} className={`px-4 py-2 font-mono text-xs uppercase tracking-[0.12rem] ${view === "world" ? "bg-accent text-background" : "text-gray-soft"}`}>🌍 Mondo</button>
+            </div>
+            <button onClick={resetFilters} className="dm-btn-outline !py-1.5 !px-3 text-xs">↺ Reset filtri</button>
           </div>
-          <select className="dm-input max-w-[200px]" value={filterVerdict} onChange={(e) => setFilterVerdict(e.target.value)}>
-            <option value="all">Tutti i verdetti</option>
-            <option value="buy">BUY</option>
-            <option value="monitor">MONITOR</option>
-            <option value="pass">PASS</option>
-          </select>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <label className="block">
+              <span className="text-[0.6rem] font-mono uppercase tracking-[0.12rem] text-gray-soft mb-1 block">Verdetto</span>
+              <select className="dm-input" value={filterVerdict} onChange={(e) => setFilterVerdict(e.target.value)}>
+                <option value="all">Tutti</option>
+                <option value="buy">BUY</option>
+                <option value="monitor">MONITOR</option>
+                <option value="pass">PASS</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-[0.6rem] font-mono uppercase tracking-[0.12rem] text-gray-soft mb-1 block">Regione</span>
+              <select className="dm-input" value={filterRegion} onChange={(e) => setFilterRegion(e.target.value)}>
+                <option value="all">Tutte le regioni</option>
+                {regionOptions.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-[0.6rem] font-mono uppercase tracking-[0.12rem] text-gray-soft mb-1 block">Ruolo</span>
+              <select className="dm-input" value={filterPosition} onChange={(e) => setFilterPosition(e.target.value)}>
+                <option value="all">Tutti i ruoli</option>
+                {POSITION_CODES.map((c) => <option key={c} value={c}>{c} · {POSITION_LABEL[c]}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-[0.6rem] font-mono uppercase tracking-[0.12rem] text-gray-soft mb-1 block">Club</span>
+              <select className="dm-input" value={filterClub} onChange={(e) => setFilterClub(e.target.value)}>
+                <option value="all">Tutti i club</option>
+                {clubOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </label>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-[1fr_320px] gap-px bg-border/10 border-hairline">
@@ -155,14 +208,21 @@ export default function MapPage() {
               className="w-full"
               style={{ height: "min(72vh, 720px)", background: "#0a0a0a" }}
             />
-            <div className="flex flex-wrap gap-3 mt-3 px-2 text-xs font-mono text-gray-soft">
-              {[["BUY", "#bfff00"], ["MONITOR", "#ff8a00"], ["PASS", "#888888"]].map(([l, c]) => (
-                <span key={l} className="flex items-center gap-2">
-                  <span style={{ width: 10, height: 10, background: c, display: "inline-block", borderRadius: "50%" }} />
-                  {l}
+            <div className="border-hairline-t mt-3 pt-3 px-2">
+              <div className="section-label mb-2">// LEGENDA</div>
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-mono text-gray-soft">
+                {[["BUY", "#bfff00"], ["MONITOR", "#ff8a00"], ["PASS", "#888888"]].map(([l, c]) => (
+                  <span key={l} className="flex items-center gap-2">
+                    <span style={{ width: 12, height: 12, background: c, display: "inline-block", borderRadius: "50%", border: "2px solid #0a0a0a" }} />
+                    <span className="text-foreground">{l}</span>
+                  </span>
+                ))}
+                <span className="flex items-center gap-2">
+                  <span style={{ width: 18, height: 18, background: "rgba(191,255,0,0.85)", display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", border: "2px solid #0a0a0a", color: "#0a0a0a", fontSize: 9, fontWeight: 700 }}>N</span>
+                  <span>Cluster (zoom per espandere)</span>
                 </span>
-              ))}
-              <span className="ml-auto">Cluster: zoom-in per espandere</span>
+                <span className="ml-auto">{filtered.length} marker visibili</span>
+              </div>
             </div>
           </div>
 

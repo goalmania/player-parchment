@@ -35,8 +35,38 @@ export interface PlayerVideo {
   kind: "youtube" | "vimeo" | "file" | "external";
 }
 
-/** Comprehensive FM-style stats. All optional, all numeric (current season). */
+/**
+ * Comprehensive FM-style stats. All optional, all numeric.
+ * Convention: chiavi senza prefisso = STAGIONE; chiavi con prefisso `m_` = ULTIMA PARTITA.
+ * Esempio: shots = tiri stagione, m_shots = tiri ultima partita.
+ */
 export interface PlayerStats {
+  // ── ULTIMA PARTITA ──
+  m_minutes?: number;
+  m_goals?: number;
+  m_assists?: number;
+  m_shots?: number;
+  m_shots_on_target?: number;
+  m_xg?: number;
+  m_xa?: number;
+  m_passes?: number;
+  m_pass_accuracy?: number;
+  m_key_passes?: number;
+  m_dribbles?: number;
+  m_dribbles_completed?: number;
+  m_tackles?: number;
+  m_tackles_won?: number;
+  m_interceptions?: number;
+  m_duels_won?: number;
+  m_aerial_duels_won?: number;
+  m_distance_km?: number;
+  m_top_speed_kmh?: number;
+  m_rating?: number;
+  m_yellow_cards?: number;
+  m_red_cards?: number;
+  m_saves?: number;
+  m_goals_conceded?: number;
+  // ── STAGIONE ──
   // Apparizioni
   matches?: number;
   matches_started?: number;
@@ -160,6 +190,46 @@ export const STATS_GROUPS: { key: string; label: string; fields: { k: keyof Play
     { k: "clean_sheets", label: "Clean sheets" },
     { k: "goals_conceded", label: "Gol subiti" },
     { k: "save_pct", label: "% parate", unit: "%" },
+  ]},
+];
+
+/** Stats della SINGOLA partita (chiavi prefissate `m_`). */
+export const STATS_MATCH_GROUPS: { key: string; label: string; fields: { k: keyof PlayerStats; label: string; unit?: string }[] }[] = [
+  { key: "m_apps", label: "Match · Generali", fields: [
+    { k: "m_minutes", label: "Minuti" },
+    { k: "m_rating", label: "Voto" },
+    { k: "m_yellow_cards", label: "Gialli" },
+    { k: "m_red_cards", label: "Rossi" },
+  ]},
+  { key: "m_off", label: "Match · Offensive", fields: [
+    { k: "m_goals", label: "Gol" },
+    { k: "m_assists", label: "Assist" },
+    { k: "m_shots", label: "Tiri" },
+    { k: "m_shots_on_target", label: "Tiri in porta" },
+    { k: "m_xg", label: "xG" },
+    { k: "m_xa", label: "xA" },
+  ]},
+  { key: "m_pass", label: "Match · Passaggi & Dribbling", fields: [
+    { k: "m_passes", label: "Passaggi" },
+    { k: "m_pass_accuracy", label: "Precisione", unit: "%" },
+    { k: "m_key_passes", label: "Passaggi chiave" },
+    { k: "m_dribbles", label: "Dribbling tentati" },
+    { k: "m_dribbles_completed", label: "Dribbling riusciti" },
+  ]},
+  { key: "m_def", label: "Match · Difensive", fields: [
+    { k: "m_tackles", label: "Contrasti" },
+    { k: "m_tackles_won", label: "Contrasti vinti" },
+    { k: "m_interceptions", label: "Intercetti" },
+    { k: "m_duels_won", label: "Duelli vinti" },
+    { k: "m_aerial_duels_won", label: "Aerei vinti" },
+  ]},
+  { key: "m_ath", label: "Match · Atletici", fields: [
+    { k: "m_distance_km", label: "Distanza", unit: "km" },
+    { k: "m_top_speed_kmh", label: "Velocità top", unit: "km/h" },
+  ]},
+  { key: "m_gk", label: "Match · Portiere", fields: [
+    { k: "m_saves", label: "Parate" },
+    { k: "m_goals_conceded", label: "Gol subiti" },
   ]},
 ];
 

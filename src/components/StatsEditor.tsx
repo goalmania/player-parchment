@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { STATS_GROUPS } from "@/lib/types";
+import { STATS_GROUPS, STATS_MATCH_GROUPS } from "@/lib/types";
 import type { PlayerStats } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -15,6 +15,7 @@ export default function StatsEditor({ value, source, season, onChange }: Props) 
   const [importInput, setImportInput] = useState("");
   const [importing, setImporting] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [scope, setScope] = useState<"season" | "match">("season");
 
   const setField = (k: keyof PlayerStats, v: string) => {
     const next: PlayerStats = { ...value };
@@ -101,7 +102,18 @@ export default function StatsEditor({ value, source, season, onChange }: Props) 
         </div>
       )}
 
-      {STATS_GROUPS.map((group) => (
+      <div className="flex border-hairline w-fit">
+        <button type="button" onClick={() => setScope("season")}
+          className={`px-4 py-2 font-mono text-xs uppercase tracking-[0.12rem] ${scope === "season" ? "bg-accent text-background" : "text-gray-soft"}`}>
+          📅 Stagione
+        </button>
+        <button type="button" onClick={() => setScope("match")}
+          className={`px-4 py-2 font-mono text-xs uppercase tracking-[0.12rem] ${scope === "match" ? "bg-accent text-background" : "text-gray-soft"}`}>
+          ⚽ Ultima partita
+        </button>
+      </div>
+
+      {(scope === "season" ? STATS_GROUPS : STATS_MATCH_GROUPS).map((group) => (
         <div key={group.key}>
           <div className="section-label mb-3">// {group.label.toUpperCase()}</div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
