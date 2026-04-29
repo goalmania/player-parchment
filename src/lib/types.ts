@@ -35,8 +35,38 @@ export interface PlayerVideo {
   kind: "youtube" | "vimeo" | "file" | "external";
 }
 
-/** Comprehensive FM-style stats. All optional, all numeric (current season). */
+/**
+ * Comprehensive FM-style stats. All optional, all numeric.
+ * Convention: chiavi senza prefisso = STAGIONE; chiavi con prefisso `m_` = ULTIMA PARTITA.
+ * Esempio: shots = tiri stagione, m_shots = tiri ultima partita.
+ */
 export interface PlayerStats {
+  // ── ULTIMA PARTITA ──
+  m_minutes?: number;
+  m_goals?: number;
+  m_assists?: number;
+  m_shots?: number;
+  m_shots_on_target?: number;
+  m_xg?: number;
+  m_xa?: number;
+  m_passes?: number;
+  m_pass_accuracy?: number;
+  m_key_passes?: number;
+  m_dribbles?: number;
+  m_dribbles_completed?: number;
+  m_tackles?: number;
+  m_tackles_won?: number;
+  m_interceptions?: number;
+  m_duels_won?: number;
+  m_aerial_duels_won?: number;
+  m_distance_km?: number;
+  m_top_speed_kmh?: number;
+  m_rating?: number;
+  m_yellow_cards?: number;
+  m_red_cards?: number;
+  m_saves?: number;
+  m_goals_conceded?: number;
+  // ── STAGIONE ──
   // Apparizioni
   matches?: number;
   matches_started?: number;
