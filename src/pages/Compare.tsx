@@ -49,9 +49,23 @@ export default function Compare() {
     [selectedIds, players]
   );
 
+  const clubOptions = useMemo(
+    () => Array.from(new Set(players.map((p) => p.club).filter(Boolean))).sort(),
+    [players]
+  );
+
   const available = useMemo(
-    () => players.filter((p) => !selectedIds.includes(p.id)),
-    [players, selectedIds]
+    () => players.filter((p) => {
+      if (selectedIds.includes(p.id)) return false;
+      if (pickerPos !== "all" && p.position_code !== pickerPos) return false;
+      if (pickerClub !== "all" && p.club !== pickerClub) return false;
+      if (pickerSearch) {
+        const s = pickerSearch.toLowerCase();
+        if (![p.name, p.club, p.position_main].some((v) => (v || "").toLowerCase().includes(s))) return false;
+      }
+      return true;
+    }),
+    [players, selectedIds, pickerPos, pickerClub, pickerSearch]
   );
 
   const addPlayer = () => {
@@ -60,6 +74,49 @@ export default function Compare() {
     setPickerId("");
   };
   const removePlayer = (id: string) => setSelectedIds((s) => s.filter((x) => x !== id));
+
+  const exportPDF = async () => {
+    if (!exportRef.current || selected.length < 2) return;
+    setExporting(true);
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+      // Aspetta paint
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      const canvas = await html2canvas(exportRef.current, {
+        backgroundColor: "#0a0a0a",
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgW = pageW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+
+      let heightLeft = imgH;
+      let position = 0;
+      pdf.addImage(imgData, "JPEG", 0, position, imgW, imgH);
+      heightLeft -= pageH;
+      while (heightLeft > 0) {
+        position = heightLeft - imgH;
+        pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, position, imgW, imgH);
+        heightLeft -= pageH;
+      }
+      const names = selected.map((p) => p.name.split(" ")[0]).join("-vs-");
+      pdf.save(`confronto-${names}-${new Date().toISOString().slice(0, 10)}.pdf`);
+      toast.success("PDF esportato ✓");
+    } catch (e: any) {
+      toast.error(e?.message || "Export PDF fallito");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const colorFor = (i: number) => PALETTE[i % PALETTE.length];
 
