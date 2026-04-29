@@ -244,7 +244,7 @@ export default function Compare() {
         )}
 
         {selected.length >= 2 && (
-          <>
+          <div ref={exportRef} className="bg-background">
             {/* HEADER CARDS */}
             <div className="grid gap-px bg-border/10 border-hairline mb-6"
               style={{ gridTemplateColumns: `repeat(${selected.length}, minmax(0, 1fr))` }}>
