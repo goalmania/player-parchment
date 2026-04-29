@@ -189,14 +189,38 @@ export default function Compare() {
             ))}
           </div>
           {selected.length < MAX_PLAYERS && (
-            <div className="flex gap-2">
-              <select className="dm-input flex-1" value={pickerId} onChange={(e) => setPickerId(e.target.value)}>
-                <option value="">— Aggiungi giocatore —</option>
-                {available.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.club || "—"} · {p.position_main}</option>)}
-              </select>
-              <button onClick={addPlayer} disabled={!pickerId} className="dm-btn-primary disabled:opacity-50">+ Aggiungi</button>
-              {selected.length > 0 && (
-                <button onClick={() => setSelectedIds([])} className="dm-btn-outline">Pulisci</button>
+            <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <input
+                  className="dm-input"
+                  placeholder="🔍 Cerca nome, club, ruolo…"
+                  value={pickerSearch}
+                  onChange={(e) => setPickerSearch(e.target.value)}
+                />
+                <select className="dm-input" value={pickerPos} onChange={(e) => setPickerPos(e.target.value)}>
+                  <option value="all">Tutti i ruoli</option>
+                  {POSITION_CODES.map((c) => <option key={c} value={c}>{c} · {POSITION_LABEL[c]}</option>)}
+                </select>
+                <select className="dm-input" value={pickerClub} onChange={(e) => setPickerClub(e.target.value)}>
+                  <option value="all">Tutti i club</option>
+                  {clubOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <select className="dm-input flex-1" value={pickerId} onChange={(e) => setPickerId(e.target.value)}>
+                  <option value="">— Aggiungi giocatore ({available.length} disponibili) —</option>
+                  {available.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.club || "—"} · {p.position_main}</option>)}
+                </select>
+                <button onClick={addPlayer} disabled={!pickerId} className="dm-btn-primary disabled:opacity-50">+ Aggiungi</button>
+                {selected.length > 0 && (
+                  <button onClick={() => setSelectedIds([])} className="dm-btn-outline">Pulisci</button>
+                )}
+              </div>
+              {(pickerPos !== "all" || pickerClub !== "all" || pickerSearch) && (
+                <button
+                  onClick={() => { setPickerSearch(""); setPickerPos("all"); setPickerClub("all"); }}
+                  className="text-xs font-mono text-gray-soft hover:text-foreground underline"
+                >↺ Reset filtri ricerca</button>
               )}
             </div>
           )}
@@ -204,6 +228,14 @@ export default function Compare() {
             <div className="text-xs font-mono text-gray-soft">Limite massimo raggiunto ({MAX_PLAYERS}).</div>
           )}
         </div>
+
+        {selected.length >= 2 && (
+          <div className="flex justify-end mb-4">
+            <button onClick={exportPDF} disabled={exporting} className="dm-btn-primary disabled:opacity-50">
+              {exporting ? "Esportazione…" : "📄 Esporta PDF"}
+            </button>
+          </div>
+        )}
 
         {selected.length < 2 && (
           <div className="dm-card p-10 text-center text-gray-soft">
