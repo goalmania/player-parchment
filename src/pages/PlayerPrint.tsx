@@ -246,7 +246,7 @@ export default function PlayerPrint() {
             g.fields
               .filter(({ k }) => {
                 const v = player.stats?.[k];
-                return v !== undefined && v !== null && v !== "";
+                return v !== undefined && v !== null;
               })
               .map(({ k, label, unit }) => ({ group: g.label, k, label, unit, v: player.stats?.[k] }))
           );
