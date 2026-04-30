@@ -14,6 +14,7 @@ import {
   deleteSavedComparison,
   type SavedComparison,
 } from "@/lib/savedComparisons";
+import { comparisonToCsv, downloadCsv } from "@/lib/csvExport";
 
 const PALETTE = [
   "hsl(71 100% 47%)",   // lime
@@ -438,6 +439,21 @@ export default function Compare() {
               className="dm-btn-outline"
             >
               {currentSavedId ? "💾 Aggiorna" : "💾 Salva"}
+            </button>
+            <button
+              onClick={() => {
+                try {
+                  const csv = comparisonToCsv(selected);
+                  downloadCsv(`dmscout-confronto-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+                  toast.success("CSV esportato ✓");
+                } catch (e: any) {
+                  toast.error(e?.message || "Esportazione CSV fallita");
+                }
+              }}
+              className="dm-btn-outline"
+              title="Esporta il confronto come tabella CSV"
+            >
+              📊 Esporta CSV
             </button>
             <button onClick={exportPDF} disabled={exporting} className="dm-btn-primary disabled:opacity-50">
               {exporting ? "Esportazione…" : "📄 Esporta PDF"}
