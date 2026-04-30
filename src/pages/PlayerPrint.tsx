@@ -4,6 +4,7 @@ import { getPlayer } from "@/lib/storage";
 import Logo from "@/components/Logo";
 import HeatmapEditor from "@/components/HeatmapEditor";
 import RadarChart from "@/components/RadarChart";
+import { STATS_GROUPS, STATS_MATCH_GROUPS } from "@/lib/types";
 
 /**
  * Print-optimized player report. Opens in a new tab and auto-triggers
