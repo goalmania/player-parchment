@@ -37,6 +37,28 @@ export default function Compare() {
   const [exporting, setExporting] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
 
+  // Saved comparisons
+  const [saved, setSaved] = useState<SavedComparison[]>([]);
+  const [savedLoading, setSavedLoading] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showLoadDialog, setShowLoadDialog] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const [saveNotes, setSaveNotes] = useState("");
+  const [currentSavedId, setCurrentSavedId] = useState<string | null>(null);
+
+  const loadSaved = async () => {
+    setSavedLoading(true);
+    try {
+      setSaved(await listSavedComparisons());
+    } catch (e: any) {
+      toast.error(e?.message || "Caricamento confronti fallito");
+    } finally {
+      setSavedLoading(false);
+    }
+  };
+
+  useEffect(() => { loadSaved(); }, []);
+
   // Seed dal database con eventuale player iniziale
   useEffect(() => {
     if (selectedIds.length > 0 || players.length === 0) return;
