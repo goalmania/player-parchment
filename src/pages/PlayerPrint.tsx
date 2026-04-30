@@ -256,7 +256,7 @@ export default function PlayerPrint() {
                 const v = player.stats?.[k];
                 return v !== undefined && v !== null && v !== "";
               })
-              .map(({ k, label, unit, v: undefined as never }) => ({ group: g.label, k, label, unit, v: player.stats?.[k] }))
+              .map(({ k, label, unit }) => ({ group: g.label, k, label, unit, v: player.stats?.[k] }))
           );
           if (seasonRows.length === 0 && matchRows.length === 0) return null;
           const renderTable = (rows: typeof seasonRows, title: string) => {
