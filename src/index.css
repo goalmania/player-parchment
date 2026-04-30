@@ -260,3 +260,29 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* ============================================================
+   PDF EXPORT — chiarisce sezioni catturate da html2canvas
+   Applicato solo nel clone (vedi onclone in Compare.tsx)
+   ============================================================ */
+.pdf-export-light [data-pdf-section] {
+  background: #ffffff !important;
+  color: #111 !important;
+  padding: 12px;
+  border-radius: 2px;
+}
+.pdf-export-light [data-pdf-section] * {
+  color: #111 !important;
+  border-color: #d8d8d8 !important;
+}
+.pdf-export-light [data-pdf-section] .text-gray-soft,
+.pdf-export-light [data-pdf-section] .text-muted-foreground {
+  color: #666 !important;
+}
+.pdf-export-light [data-pdf-section] .bg-gray-light\/40,
+.pdf-export-light [data-pdf-section] .bg-gray-light\/20 {
+  background: #f4f4f4 !important;
+}
+.pdf-export-light [data-pdf-section] .bg-background {
+  background: #ffffff !important;
+}
