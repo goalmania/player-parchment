@@ -8,6 +8,12 @@ import { TagPill, VerdictBadge } from "@/components/PlayerCard";
 import type { Player, PlayerStats } from "@/lib/types";
 import { STATS_GROUPS, STATS_MATCH_GROUPS, POSITION_CODES, POSITION_LABEL } from "@/lib/types";
 import { toast } from "sonner";
+import {
+  listSavedComparisons,
+  saveComparison,
+  deleteSavedComparison,
+  type SavedComparison,
+} from "@/lib/savedComparisons";
 
 const PALETTE = [
   "hsl(71 100% 47%)",   // lime
