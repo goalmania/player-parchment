@@ -2,6 +2,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { useState } from "react";
 import Logo from "./Logo";
 import AlertsBell from "./AlertsBell";
+import GlobalSearch from "./GlobalSearch";
 
 const links = [
   { to: "/", label: "Dashboard", end: true },
