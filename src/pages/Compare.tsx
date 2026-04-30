@@ -495,6 +495,7 @@ export default function Compare() {
             </div>
 
             {/* RATINGS TABLE */}
+            <div data-pdf-section="ratings">
             <div className="section-label mb-3">// VALUTAZIONI & ANAGRAFICA</div>
             <div className="border-hairline mb-8 overflow-x-auto">
               <table className="w-full text-sm min-w-[560px]">
