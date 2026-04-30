@@ -532,8 +532,10 @@ export default function Compare() {
                 </tbody>
               </table>
             </div>
+            </div>
 
             {/* SKILLS */}
+            <div data-pdf-section="skills">
             <div className="section-label mb-3">// SKILLS (0-100)</div>
             <div className="border-hairline mb-8 p-4 space-y-4">
               {skillKeys.map((k) => {
