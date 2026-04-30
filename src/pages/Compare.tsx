@@ -454,7 +454,7 @@ export default function Compare() {
         {selected.length >= 2 && (
           <div ref={exportRef} className="bg-background">
             {/* HEADER CARDS */}
-            <div className="grid gap-px bg-border/10 border-hairline mb-6"
+            <div data-pdf-section="header" className="grid gap-px bg-border/10 border-hairline mb-6"
               style={{ gridTemplateColumns: `repeat(${selected.length}, minmax(0, 1fr))` }}>
               {selected.map((p, i) => (
                 <div key={p.id} className="bg-background p-5" style={{ borderTop: `4px solid ${colorFor(i)}` }}>
