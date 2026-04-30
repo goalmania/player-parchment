@@ -45,13 +45,15 @@ export default function Navbar() {
               {l.label}
             </NavLink>
           ))}
-          <NavLink to="/add-report" className="ml-2 dm-btn-outline !py-1.5 !px-3 text-xs">
+          <GlobalSearch />
+          <NavLink to="/add-report" className="ml-1 dm-btn-outline !py-1.5 !px-3 text-xs">
             + Aggiungi Report
           </NavLink>
           <AlertsBell />
         </nav>
 
         <div className="md:hidden flex items-center gap-1">
+          <GlobalSearch />
           <AlertsBell />
           <button
             aria-label="Menu"
