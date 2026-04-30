@@ -14,6 +14,7 @@ import ShortlistButton from "@/components/ShortlistButton";
 import VideoGallery from "@/components/VideoGallery";
 import StatsDisplay from "@/components/StatsDisplay";
 import { buildShareLink } from "@/lib/share";
+import { playerToCsv, downloadCsv, safeFilename } from "@/lib/csvExport";
 import { useAuth } from "@/lib/auth";
 import type { Observation } from "@/lib/types";
 import { toast } from "sonner";
@@ -376,6 +377,19 @@ export default function Player() {
             onClick={() => window.open(`/player-print?id=${player.id}`, "_blank", "noopener")}
             className="dm-btn-outline"
           >⬇ Scarica PDF</button>
+          <button
+            onClick={() => {
+              try {
+                const csv = playerToCsv(player);
+                downloadCsv(`dmscout-${safeFilename(player.name)}.csv`, csv);
+                toast.success("CSV esportato ✓");
+              } catch (e: any) {
+                toast.error(e?.message || "Esportazione CSV fallita");
+              }
+            }}
+            className="dm-btn-outline"
+            title="Esporta scheda completa, statistiche e verdetto in CSV"
+          >📊 Esporta CSV</button>
           <Link to={`/edit-report?id=${player.id}`} className="dm-btn-outline">✏ Modifica</Link>
           <button
             onClick={() => { setCompareSeed(player.id); navigate("/compare"); }}
