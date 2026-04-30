@@ -571,8 +571,10 @@ export default function Compare() {
                 );
               })}
             </div>
+            </div>
 
             {/* STATISTICHE */}
+            <div data-pdf-section="stats">
             <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
               <div className="section-label">// STATISTICHE</div>
               <div className="flex border-hairline">
