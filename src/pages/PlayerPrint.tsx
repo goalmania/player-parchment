@@ -226,6 +226,82 @@ export default function PlayerPrint() {
           </div>
         </div>
 
+        {/* Tactical roles */}
+        {player.tactical_roles && player.tactical_roles.length > 0 && (
+          <div className="print-section">
+            <h3 style={{ textTransform: "uppercase", fontSize: 16, margin: "0 0 10px" }}>Ruoli tattici</h3>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {player.tactical_roles.map((r, i) => (
+                <span key={i} className="print-tag" style={{ background: "#f4f4f4" }}>
+                  {r.formation} · {r.role}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Statistiche stagione */}
+        {(() => {
+          const seasonRows = STATS_GROUPS.flatMap((g) =>
+            g.fields
+              .filter(({ k }) => {
+                const v = player.stats?.[k];
+                return v !== undefined && v !== null && v !== "";
+              })
+              .map(({ k, label, unit }) => ({ group: g.label, k, label, unit, v: player.stats?.[k] }))
+          );
+          const matchRows = STATS_MATCH_GROUPS.flatMap((g) =>
+            g.fields
+              .filter(({ k }) => {
+                const v = player.stats?.[k];
+                return v !== undefined && v !== null && v !== "";
+              })
+              .map(({ k, label, unit, v: undefined as never }) => ({ group: g.label, k, label, unit, v: player.stats?.[k] }))
+          );
+          if (seasonRows.length === 0 && matchRows.length === 0) return null;
+          const renderTable = (rows: typeof seasonRows, title: string) => {
+            if (rows.length === 0) return null;
+            // Group by group
+            const grouped: Record<string, typeof rows> = {};
+            for (const r of rows) {
+              if (!grouped[r.group]) grouped[r.group] = [] as any;
+              (grouped[r.group] as any).push(r);
+            }
+            return (
+              <div className="print-section">
+                <h3 style={{ textTransform: "uppercase", fontSize: 16, margin: "0 0 10px" }}>{title}</h3>
+                <div className="print-card" style={{ padding: 0 }}>
+                  <table style={{ width: "100%", fontSize: 11, borderCollapse: "collapse" }}>
+                    <tbody>
+                      {Object.entries(grouped).map(([gname, rs]) => (
+                        <>
+                          <tr key={`g-${gname}`} style={{ background: "#f4f4f4" }}>
+                            <td colSpan={2} style={{ padding: "4px 10px", fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: "0.15rem", textTransform: "uppercase", color: "#444" }}>
+                              {gname}
+                            </td>
+                          </tr>
+                          {(rs as any).map((r: any) => (
+                            <tr key={r.k as string} style={{ borderBottom: "1px solid #eee" }}>
+                              <td style={{ padding: "5px 10px", color: "#555" }}>{r.label}{r.unit ? ` (${r.unit})` : ""}</td>
+                              <td style={{ padding: "5px 10px", textAlign: "right", fontWeight: 600, fontFamily: "'Space Mono', monospace" }}>{r.v}</td>
+                            </tr>
+                          ))}
+                        </>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          };
+          return (
+            <>
+              {renderTable(seasonRows, "Statistiche stagione")}
+              {renderTable(matchRows, "Ultima partita")}
+            </>
+          );
+        })()}
+
         {player.heatmap && player.heatmap.length > 0 && (
           <div className="print-section">
             <h3 style={{ textTransform: "uppercase", fontSize: 16, margin: "0 0 10px" }}>Mappa di calore</h3>
