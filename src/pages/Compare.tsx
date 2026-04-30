@@ -473,7 +473,7 @@ export default function Compare() {
             </div>
 
             {/* RADAR */}
-            <div className="border-hairline p-4 mb-8 flex flex-col items-center">
+            <div data-pdf-section="radar" className="border-hairline p-4 mb-8 flex flex-col items-center">
               <div className="section-label mb-3 self-start">// RADAR ATTRIBUTI</div>
               <RadarChart
                 axes={["Tec", "Tat", "Fis", "Men", "Dec", "Pot"]}
