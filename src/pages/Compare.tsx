@@ -680,6 +680,99 @@ export default function Compare() {
             ))}
           </div>
         )}
+
+        {/* SAVE DIALOG */}
+        {showSaveDialog && (
+          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowSaveDialog(false)}>
+            <div className="bg-background border-hairline max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+              <div className="section-label mb-3">// {currentSavedId ? "AGGIORNA CONFRONTO" : "SALVA CONFRONTO"}</div>
+              <h3 className="font-display font-bold text-2xl uppercase mb-4">
+                {currentSavedId ? "Aggiorna" : "Salva"} confronto
+              </h3>
+              <label className="block text-xs font-mono uppercase tracking-[0.12rem] text-gray-soft mb-1">Nome</label>
+              <input
+                className="dm-input w-full mb-3"
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                placeholder="Es. Top mediani Serie B"
+                autoFocus
+              />
+              <label className="block text-xs font-mono uppercase tracking-[0.12rem] text-gray-soft mb-1">Note (opzionale)</label>
+              <textarea
+                className="dm-input w-full mb-4"
+                rows={3}
+                value={saveNotes}
+                onChange={(e) => setSaveNotes(e.target.value)}
+                placeholder="Contesto, obiettivo del confronto…"
+              />
+              <div className="text-xs font-mono text-gray-soft mb-4">
+                {selected.length} giocatori inclusi: {selected.map((p) => p.name).join(", ")}
+              </div>
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setShowSaveDialog(false)} className="dm-btn-outline">Annulla</button>
+                <button onClick={handleSaveComparison} className="dm-btn-primary">
+                  {currentSavedId ? "Aggiorna" : "Salva"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* LOAD DIALOG */}
+        {showLoadDialog && (
+          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowLoadDialog(false)}>
+            <div className="bg-background border-hairline max-w-2xl w-full p-6 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <div className="section-label mb-1">// CONFRONTI SALVATI</div>
+                  <h3 className="font-display font-bold text-2xl uppercase">Confronti salvati</h3>
+                </div>
+                <button onClick={() => setShowLoadDialog(false)} className="text-gray-soft hover:text-foreground text-2xl leading-none">✕</button>
+              </div>
+              {savedLoading ? (
+                <div className="py-8 text-center text-gray-soft">Caricamento…</div>
+              ) : saved.length === 0 ? (
+                <div className="py-8 text-center text-gray-soft">
+                  Nessun confronto salvato. Crea un confronto e salvalo per ritrovarlo qui.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {saved.map((c) => {
+                    const playerNames = c.player_ids
+                      .map((id) => players.find((p) => p.id === id)?.name)
+                      .filter(Boolean) as string[];
+                    const missing = c.player_ids.length - playerNames.length;
+                    return (
+                      <div key={c.id} className="border-hairline p-3 hover:bg-gray-light/30 transition-colors">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-display font-bold uppercase truncate">{c.name}</div>
+                            <div className="text-xs font-mono text-gray-soft mt-0.5 truncate">
+                              {playerNames.join(" · ") || "—"}
+                              {missing > 0 && <span className="text-destructive ml-2">⚠ {missing} non disponibili</span>}
+                            </div>
+                            {c.notes && <div className="text-xs text-gray-soft mt-1 italic">{c.notes}</div>}
+                            <div className="text-[0.65rem] font-mono text-gray-soft mt-1">
+                              {new Date(c.updated_at).toLocaleString("it-IT")}
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <button onClick={() => handleLoadComparison(c)} className="dm-btn-primary text-xs !py-1 !px-3">
+                              Carica
+                            </button>
+                            <button onClick={() => handleDeleteComparison(c.id)} className="text-xs text-destructive hover:underline font-mono">
+                              Elimina
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </section>
     </PageShell>
   );
