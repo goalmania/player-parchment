@@ -417,7 +417,28 @@ export default function Compare() {
         </div>
 
         {selected.length >= 2 && (
-          <div className="flex justify-end mb-4">
+          <div className="flex flex-wrap justify-end gap-2 mb-4">
+            <button
+              onClick={() => setShowLoadDialog(true)}
+              className="dm-btn-outline"
+              title="Carica un confronto salvato"
+            >
+              📂 Salvati ({saved.length})
+            </button>
+            <button
+              onClick={() => {
+                setSaveName(currentSavedId
+                  ? saved.find((s) => s.id === currentSavedId)?.name || ""
+                  : `Confronto ${new Date().toLocaleDateString("it-IT")}`);
+                setSaveNotes(currentSavedId
+                  ? saved.find((s) => s.id === currentSavedId)?.notes || ""
+                  : "");
+                setShowSaveDialog(true);
+              }}
+              className="dm-btn-outline"
+            >
+              {currentSavedId ? "💾 Aggiorna" : "💾 Salva"}
+            </button>
             <button onClick={exportPDF} disabled={exporting} className="dm-btn-primary disabled:opacity-50">
               {exporting ? "Esportazione…" : "📄 Esporta PDF"}
             </button>
