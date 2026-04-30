@@ -648,8 +648,10 @@ export default function Compare() {
                 </tbody>
               </table>
             </div>
+            </div>
 
             {/* VERDETTI */}
+            <div data-pdf-section="verdicts">
             <div className="section-label mb-3">// VERDETTI</div>
             <div className="grid gap-4 mb-6"
               style={{ gridTemplateColumns: `repeat(${Math.min(selected.length, 3)}, minmax(0, 1fr))` }}>
@@ -663,6 +665,7 @@ export default function Compare() {
                   <p className="text-sm">{p.verdict || <span className="text-gray-soft">Nessun verdetto.</span>}</p>
                 </div>
               ))}
+            </div>
             </div>
 
           </div>
