@@ -176,21 +176,25 @@ export async function loadPlayers(): Promise<Player[]> {
 }
 
 let realtimeChannel: any = null;
+let realtimeStarting = false;
 export function startRealtime() {
-  if (realtimeChannel) return;
-  realtimeChannel = supabase
+  if (realtimeChannel || realtimeStarting) return;
+  realtimeStarting = true;
+  const ch = supabase
     .channel("players-changes")
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "players" },
       () => { loadPlayers(); }
-    )
-    .subscribe();
+    );
+  realtimeChannel = ch;
+  ch.subscribe(() => { realtimeStarting = false; });
 }
 export function stopRealtime() {
   if (realtimeChannel) {
     supabase.removeChannel(realtimeChannel);
     realtimeChannel = null;
+    realtimeStarting = false;
   }
 }
 
