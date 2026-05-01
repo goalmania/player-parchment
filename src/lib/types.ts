@@ -47,82 +47,187 @@ export interface PlayerStats {
   m_assists?: number;
   m_shots?: number;
   m_shots_on_target?: number;
+  m_shots_blocked?: number;
+  m_shots_off_target?: number;
   m_xg?: number;
   m_xa?: number;
+  m_npxg?: number;
+  m_big_chances_created?: number;
+  m_big_chances_missed?: number;
   m_passes?: number;
+  m_passes_completed?: number;
   m_pass_accuracy?: number;
   m_key_passes?: number;
+  m_through_balls?: number;
+  m_long_balls?: number;
+  m_long_ball_accuracy?: number;
+  m_crosses?: number;
+  m_crosses_completed?: number;
+  m_forward_passes?: number;
+  m_back_passes?: number;
+  m_passes_into_final_third?: number;
+  m_passes_into_box?: number;
   m_dribbles?: number;
   m_dribbles_completed?: number;
+  m_dribble_success?: number;
+  m_progressive_carries?: number;
+  m_progressive_passes?: number;
+  m_touches?: number;
+  m_touches_in_box?: number;
+  m_lost_balls?: number;
+  m_recoveries?: number;
   m_tackles?: number;
   m_tackles_won?: number;
   m_interceptions?: number;
+  m_blocks?: number;
+  m_clearances?: number;
+  m_duels_total?: number;
   m_duels_won?: number;
+  m_aerial_duels_total?: number;
   m_aerial_duels_won?: number;
+  m_ground_duels_total?: number;
+  m_ground_duels_won?: number;
+  m_fouls_committed?: number;
+  m_fouls_drawn?: number;
+  m_offsides?: number;
   m_distance_km?: number;
+  m_sprints?: number;
+  m_high_intensity_runs?: number;
   m_top_speed_kmh?: number;
+  m_avg_speed_kmh?: number;
   m_rating?: number;
   m_yellow_cards?: number;
   m_red_cards?: number;
   m_saves?: number;
+  m_saves_inside_box?: number;
+  m_saves_outside_box?: number;
   m_goals_conceded?: number;
+  m_clean_sheet?: number;
+  m_punches?: number;
+  m_high_claims?: number;
+  m_sweeper_actions?: number;
   // ── STAGIONE ──
   // Apparizioni
   matches?: number;
   matches_started?: number;
+  matches_subbed_in?: number;
+  matches_subbed_out?: number;
   minutes?: number;
+  minutes_per_match?: number;
   // Disciplina
   yellow_cards?: number;
+  yellow_red_cards?: number;
   red_cards?: number;
+  fouls_per_match?: number;
   // Offensive
   goals?: number;
+  goals_per_90?: number;
+  non_penalty_goals?: number;
   assists?: number;
+  assists_per_90?: number;
+  goal_contributions?: number;
   shots?: number;
+  shots_per_90?: number;
   shots_on_target?: number;
+  shots_on_target_pct?: number; // %
+  shots_blocked?: number;
+  shots_off_target?: number;
   xg?: number;
+  xg_per_90?: number;
   xa?: number;
+  xa_per_90?: number;
   npxg?: number;
+  npxg_per_90?: number;
+  xg_overperformance?: number; // gol - xG
   goal_conversion?: number; // %
+  big_chances_created?: number;
+  big_chances_missed?: number;
   penalties_scored?: number;
   penalties_taken?: number;
+  penalty_conversion?: number; // %
+  free_kick_goals?: number;
+  headed_goals?: number;
   // Passing
   passes?: number;
+  passes_per_90?: number;
   passes_completed?: number;
   pass_accuracy?: number; // %
   key_passes?: number;
+  key_passes_per_90?: number;
   through_balls?: number;
+  through_ball_accuracy?: number; // %
   long_balls?: number;
   long_ball_accuracy?: number;
   crosses?: number;
   crosses_completed?: number;
+  cross_accuracy?: number; // %
+  forward_passes?: number;
+  back_passes?: number;
+  passes_into_final_third?: number;
+  passes_into_box?: number;
+  smart_passes?: number; // InStat
+  smart_passes_completed?: number;
   // Possesso / dribbling
   touches?: number;
+  touches_in_box?: number;
   dribbles?: number;
   dribbles_completed?: number;
   dribble_success?: number; // %
   progressive_carries?: number;
   progressive_passes?: number;
+  carries_into_final_third?: number;
+  carries_into_box?: number;
+  lost_balls?: number;
+  recoveries?: number;
+  successful_attacking_actions?: number; // InStat
+  successful_defensive_actions?: number; // InStat
   // Difensivi
   tackles?: number;
+  tackles_per_90?: number;
   tackles_won?: number;
+  tackle_success?: number; // %
   interceptions?: number;
+  interceptions_per_90?: number;
   blocks?: number;
   clearances?: number;
   duels_won?: number;
   duels_total?: number;
+  duel_success?: number; // %
   aerial_duels_won?: number;
   aerial_duels_total?: number;
+  aerial_duel_success?: number; // %
+  ground_duels_won?: number;
+  ground_duels_total?: number;
+  ground_duel_success?: number; // %
   fouls_committed?: number;
   fouls_drawn?: number;
+  offsides?: number;
+  errors_leading_to_goal?: number;
+  errors_leading_to_shot?: number;
   // Atletici
   distance_km?: number;
+  distance_per_match_km?: number;
   sprints?: number;
+  sprints_per_match?: number;
+  high_intensity_runs?: number;
   top_speed_kmh?: number;
+  avg_speed_kmh?: number;
   // Portieri
   saves?: number;
+  saves_per_90?: number;
+  save_pct?: number;
   clean_sheets?: number;
   goals_conceded?: number;
-  save_pct?: number;
+  goals_conceded_per_90?: number;
+  psxg?: number; // post-shot xG
+  psxg_minus_goals?: number;
+  punches?: number;
+  high_claims?: number;
+  sweeper_actions?: number;
+  goal_kicks?: number;
+  goal_kick_accuracy?: number; // %
+  // InStat composite
+  instat_index?: number;
   // Rating medio
   avg_rating?: number;
 }
