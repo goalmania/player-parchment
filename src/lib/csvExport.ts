@@ -1,15 +1,32 @@
 import type { Player } from "./types";
 import { STATS_GROUPS, STATS_MATCH_GROUPS } from "./types";
 
+/** Versione del formato di export — cambiala se modifichi la struttura del CSV. */
+export const CSV_EXPORT_VERSION = "2.0";
+
 /** Escape a CSV cell per RFC 4180 (quotes, commas, newlines). */
 function csvCell(v: unknown): string {
   if (v === null || v === undefined) return "";
+  // Normalizza i numeri con punto decimale (no separatore di migliaia, no localizzazione).
+  if (typeof v === "number") {
+    if (!Number.isFinite(v)) return "";
+    // Mantieni interi puliti, decimali con max 4 cifre, sempre con `.`
+    const s = Number.isInteger(v) ? String(v) : String(Math.round(v * 10000) / 10000);
+    return s;
+  }
   const s = String(v);
   if (/[",\n;]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
 
-/** Build a CSV string from an array of rows. Each row is string[]. */
+/** Format currency in EUR with dot decimal, no thousand separators (Excel-friendly). */
+function fmtCurrency(v: number | null | undefined): string {
+  if (v === null || v === undefined || !Number.isFinite(v as number)) return "";
+  // Sempre intero in euro, senza simbolo (la colonna "Valuta" indica EUR).
+  return String(Math.round(v as number));
+}
+
+/** Build a CSV string from an array of rows. Each row is an array of cells. */
 export function rowsToCsv(rows: (string | number | null | undefined)[][]): string {
   // Prepend BOM for Excel UTF-8 compatibility.
   return "\uFEFF" + rows.map((r) => r.map(csvCell).join(",")).join("\n");
@@ -35,15 +52,56 @@ export function safeFilename(s: string): string {
   return (s || "report").replace(/[^a-z0-9-_]+/gi, "_").slice(0, 60);
 }
 
+/** Header metadata block, comune a tutti gli export. */
+function metaRows(opts: {
+  kind: "player" | "comparison";
+  scope: "Stagione" | "Ultima partita" | "Stagione + Ultima partita";
+  season?: string;
+  source?: string;
+  reportDate?: string;
+  extra?: [string, unknown][];
+}): (string | number | null | undefined)[][] {
+  const rows: (string | number | null | undefined)[][] = [];
+  rows.push(["DM Scout", opts.kind === "player" ? "Report giocatore" : "Confronto giocatori"]);
+  rows.push(["Versione export", CSV_EXPORT_VERSION]);
+  rows.push(["Generato il (ISO)", new Date().toISOString()]);
+  rows.push(["Generato il (locale)", new Date().toLocaleString("it-IT")]);
+  rows.push(["Modalità", opts.scope]);
+  if (opts.season) rows.push(["Stagione", opts.season]);
+  if (opts.source) rows.push(["Fonte statistiche", opts.source]);
+  if (opts.reportDate) rows.push(["Data report", opts.reportDate]);
+  rows.push(["Separatore decimale", "."]);
+  rows.push(["Valuta", "EUR"]);
+  (opts.extra || []).forEach(([k, v]) => rows.push([k, v as any]));
+  rows.push([]);
+  return rows;
+}
+
 /**
  * Build a key/value style CSV (Field,Value) for a single player,
  * including identity, ratings, skills, market, verdict and all stats.
  */
 export function playerToCsv(p: Player): string {
-  const rows: (string | number | null | undefined)[][] = [];
-  rows.push(["DM Scout · Report giocatore"]);
-  rows.push(["Generato il", new Date().toLocaleString("it-IT")]);
-  rows.push([]);
+  const stats = p.stats || {};
+  const hasMatch = STATS_MATCH_GROUPS.some((g) => g.fields.some(({ k }) => stats[k] !== undefined && stats[k] !== null));
+  const hasSeason = STATS_GROUPS.some((g) => g.fields.some(({ k }) => stats[k] !== undefined && stats[k] !== null));
+  const scope: "Stagione" | "Ultima partita" | "Stagione + Ultima partita" =
+    hasMatch && hasSeason ? "Stagione + Ultima partita" : hasMatch ? "Ultima partita" : "Stagione";
+
+  const rows: (string | number | null | undefined)[][] = [
+    ...metaRows({
+      kind: "player",
+      scope,
+      season: p.stats_season,
+      source: p.stats_source,
+      reportDate: p.date,
+      extra: [
+        ["Giocatore", p.name],
+        ["Club", p.club],
+        ["Posizione", p.position_main],
+      ],
+    }),
+  ];
 
   rows.push(["# IDENTITÀ"]);
   rows.push(["Campo", "Valore"]);
@@ -86,9 +144,9 @@ export function playerToCsv(p: Player): string {
   rows.push([]);
 
   rows.push(["# MERCATO"]);
-  rows.push(["Campo", "Valore"]);
-  rows.push(["Valore min (€)", p.market.value_min]);
-  rows.push(["Valore max (€)", p.market.value_max]);
+  rows.push(["Campo", "Valore", "Valuta"]);
+  rows.push(["Valore min", fmtCurrency(p.market.value_min), "EUR"]);
+  rows.push(["Valore max", fmtCurrency(p.market.value_max), "EUR"]);
   rows.push(["Potenziale", p.market.potential]);
   rows.push(["Rischio", p.market.risk]);
   rows.push(["Timeline", p.market.timeline]);
@@ -118,33 +176,30 @@ export function playerToCsv(p: Player): string {
     rows.push([]);
   }
 
-  // Stats
-  const stats = p.stats || {};
-  const seasonRows = STATS_GROUPS.flatMap((g) =>
-    g.fields
-      .filter(({ k }) => stats[k] !== undefined && stats[k] !== null)
-      .map(({ k, label, unit }) => [g.label, label, stats[k] as any, unit || ""])
-  );
-  const matchRows = STATS_MATCH_GROUPS.flatMap((g) =>
-    g.fields
-      .filter(({ k }) => stats[k] !== undefined && stats[k] !== null)
-      .map(({ k, label, unit }) => [g.label, label, stats[k] as any, unit || ""])
-  );
-
-  if (seasonRows.length || matchRows.length) {
-    rows.push(["# STATISTICHE", `Stagione: ${p.stats_season || "-"}`, `Fonte: ${p.stats_source || "-"}`]);
-  }
-  if (matchRows.length) {
+  // Stats — sezioni separate con colonna Modalità per filtro Excel.
+  if (hasMatch) {
+    rows.push(["# STATISTICHE · ULTIMA PARTITA"]);
+    rows.push(["Modalità", "Gruppo", "Statistica", "Chiave", "Valore", "Unità"]);
+    STATS_MATCH_GROUPS.forEach((g) => {
+      g.fields.forEach(({ k, label, unit }) => {
+        const v = stats[k];
+        if (v === undefined || v === null) return;
+        rows.push(["Ultima partita", g.label, label, String(k), v as number, unit || ""]);
+      });
+    });
     rows.push([]);
-    rows.push(["## ULTIMA PARTITA"]);
-    rows.push(["Gruppo", "Statistica", "Valore", "Unità"]);
-    matchRows.forEach((r) => rows.push(r));
   }
-  if (seasonRows.length) {
+  if (hasSeason) {
+    rows.push(["# STATISTICHE · STAGIONE", `Stagione: ${p.stats_season || "-"}`, `Fonte: ${p.stats_source || "-"}`]);
+    rows.push(["Modalità", "Gruppo", "Statistica", "Chiave", "Valore", "Unità"]);
+    STATS_GROUPS.forEach((g) => {
+      g.fields.forEach(({ k, label, unit }) => {
+        const v = stats[k];
+        if (v === undefined || v === null) return;
+        rows.push(["Stagione", g.label, label, String(k), v as number, unit || ""]);
+      });
+    });
     rows.push([]);
-    rows.push(["## STAGIONE"]);
-    rows.push(["Gruppo", "Statistica", "Valore", "Unità"]);
-    seasonRows.forEach((r) => rows.push(r));
   }
 
   return rowsToCsv(rows);
@@ -152,79 +207,105 @@ export function playerToCsv(p: Player): string {
 
 /**
  * Build a wide CSV comparing N players side-by-side.
- * One column per player; rows are categorised metrics.
+ * One column per player; rows are categorised metrics with a `Modalità` column.
  */
 export function comparisonToCsv(players: Player[]): string {
   if (players.length === 0) return rowsToCsv([["(nessun giocatore)"]]);
-  const header = ["Categoria", "Metrica", ...players.map((p) => p.name)];
-  const rows: (string | number | null | undefined)[][] = [];
 
-  rows.push(["DM Scout · Confronto giocatori"]);
-  rows.push(["Generato il", new Date().toLocaleString("it-IT")]);
-  rows.push(["N. giocatori", players.length]);
-  rows.push([]);
+  // Determina lo scope globale dal contenuto effettivo.
+  const anyMatch = players.some((p) =>
+    STATS_MATCH_GROUPS.some((g) => g.fields.some(({ k }) => p.stats?.[k] !== undefined && p.stats?.[k] !== null))
+  );
+  const anySeason = players.some((p) =>
+    STATS_GROUPS.some((g) => g.fields.some(({ k }) => p.stats?.[k] !== undefined && p.stats?.[k] !== null))
+  );
+  const scope: "Stagione" | "Ultima partita" | "Stagione + Ultima partita" =
+    anyMatch && anySeason ? "Stagione + Ultima partita" : anyMatch ? "Ultima partita" : "Stagione";
+
+  const rows: (string | number | null | undefined)[][] = [
+    ...metaRows({
+      kind: "comparison",
+      scope,
+      extra: [
+        ["N. giocatori", players.length],
+        ["Giocatori", players.map((p) => p.name).join(" | ")],
+      ],
+    }),
+  ];
+
+  const header = ["Modalità", "Categoria", "Metrica", "Chiave", "Unità", ...players.map((p) => p.name)];
   rows.push(header);
 
-  const push = (cat: string, label: string, getter: (p: Player) => unknown) => {
-    rows.push([cat, label, ...players.map((p) => {
-      const v = getter(p);
-      return v === undefined || v === null ? "" : (v as any);
-    })]);
+  const push = (
+    mode: string,
+    cat: string,
+    label: string,
+    key: string,
+    unit: string,
+    getter: (p: Player) => unknown,
+  ) => {
+    rows.push([
+      mode, cat, label, key, unit,
+      ...players.map((p) => {
+        const v = getter(p);
+        return v === undefined || v === null ? "" : (v as any);
+      }),
+    ]);
   };
 
-  // Identity
-  push("Identità", "Club", (p) => p.club);
-  push("Identità", "Lega", (p) => p.league);
-  push("Identità", "Nazionalità", (p) => p.nationality);
-  push("Identità", "Regione", (p) => p.region);
-  push("Identità", "Posizione", (p) => p.position_main);
-  push("Identità", "Età", (p) => p.age);
-  push("Identità", "Piede", (p) => p.foot);
-  push("Identità", "Altezza (cm)", (p) => p.height);
-  push("Identità", "Peso (kg)", (p) => p.weight);
+  // Identity (modalità "Profilo")
+  push("Profilo", "Identità", "Club", "club", "", (p) => p.club);
+  push("Profilo", "Identità", "Lega", "league", "", (p) => p.league);
+  push("Profilo", "Identità", "Nazionalità", "nationality", "", (p) => p.nationality);
+  push("Profilo", "Identità", "Regione", "region", "", (p) => p.region);
+  push("Profilo", "Identità", "Posizione", "position_main", "", (p) => p.position_main);
+  push("Profilo", "Identità", "Età", "age", "anni", (p) => p.age);
+  push("Profilo", "Identità", "Piede", "foot", "", (p) => p.foot);
+  push("Profilo", "Identità", "Altezza", "height", "cm", (p) => p.height);
+  push("Profilo", "Identità", "Peso", "weight", "kg", (p) => p.weight);
 
   // Ratings
-  (["overall","technical","tactical","physical","mental"] as const).forEach((k) =>
-    push("Ratings", k, (p) => p.ratings[k])
+  (["overall", "technical", "tactical", "physical", "mental"] as const).forEach((k) =>
+    push("Profilo", "Ratings (0-10)", k, k, "", (p) => p.ratings[k]),
   );
 
   // Skills
   Object.keys(players[0].skills).forEach((k) =>
-    push("Skills", k, (p) => (p.skills as any)[k])
+    push("Profilo", "Skills (0-100)", k, k, "", (p) => (p.skills as any)[k]),
   );
 
   // Stars
   Object.keys(players[0].stars).forEach((k) =>
-    push("Stars", k, (p) => (p.stars as any)[k])
+    push("Profilo", "Stars (0-5)", k, k, "★", (p) => (p.stars as any)[k]),
   );
 
-  // Market
-  push("Mercato", "Valore min (€)", (p) => p.market.value_min);
-  push("Mercato", "Valore max (€)", (p) => p.market.value_max);
-  push("Mercato", "Potenziale", (p) => p.market.potential);
-  push("Mercato", "Rischio", (p) => p.market.risk);
-  push("Mercato", "Timeline", (p) => p.market.timeline);
-  push("Mercato", "Pronta inseribilità", (p) => p.market.ready_level);
+  // Market — valuta esplicita, formattata per Excel (punto decimale, niente simbolo).
+  push("Profilo", "Mercato", "Valore min", "value_min", "EUR", (p) => fmtCurrency(p.market.value_min));
+  push("Profilo", "Mercato", "Valore max", "value_max", "EUR", (p) => fmtCurrency(p.market.value_max));
+  push("Profilo", "Mercato", "Potenziale", "potential", "", (p) => p.market.potential);
+  push("Profilo", "Mercato", "Rischio", "risk", "", (p) => p.market.risk);
+  push("Profilo", "Mercato", "Timeline", "timeline", "", (p) => p.market.timeline);
+  push("Profilo", "Mercato", "Pronta inseribilità", "ready_level", "", (p) => p.market.ready_level);
 
   // Verdict
-  push("Verdetto", "Tipo", (p) => p.verdict_type);
-  push("Verdetto", "Verdetto", (p) => p.verdict);
+  push("Profilo", "Verdetto", "Tipo", "verdict_type", "", (p) => p.verdict_type);
+  push("Profilo", "Verdetto", "Verdetto", "verdict", "", (p) => p.verdict);
 
-  // Stats — both season + match, only metrics where at least one player has a value
-  const allGroups = [
-    ...STATS_MATCH_GROUPS.map((g) => ({ ...g, scope: "Match" })),
-    ...STATS_GROUPS.map((g) => ({ ...g, scope: "Stagione" })),
+  // Stats stagione + ultima partita (solo metriche con almeno un valore presente).
+  const blocks: { mode: string; groups: typeof STATS_GROUPS }[] = [
+    { mode: "Ultima partita", groups: STATS_MATCH_GROUPS },
+    { mode: "Stagione", groups: STATS_GROUPS },
   ];
-  for (const g of allGroups) {
-    for (const f of g.fields) {
-      const present = players.some((p) => {
-        const v = p.stats?.[f.k];
-        return v !== undefined && v !== null;
-      });
-      if (!present) continue;
-      const cat = `${g.scope} · ${g.label}`;
-      const lbl = f.unit ? `${f.label} (${f.unit})` : f.label;
-      push(cat, lbl, (p) => p.stats?.[f.k]);
+  for (const { mode, groups } of blocks) {
+    for (const g of groups) {
+      for (const f of g.fields) {
+        const present = players.some((p) => {
+          const v = p.stats?.[f.k];
+          return v !== undefined && v !== null;
+        });
+        if (!present) continue;
+        push(mode, g.label, f.label, String(f.k), f.unit || "", (p) => p.stats?.[f.k]);
+      }
     }
   }
 
