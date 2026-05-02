@@ -254,7 +254,7 @@ export const INSTAT_FIELD_MAP: Partial<Record<keyof PlayerStats, InstatMap>> = {
 };
 
 /** Helper per derivare il mapping match (m_*) dal mapping stagione. */
-function instatForKey(key: string): InstatMap | undefined {
+export function instatForKey(key: string): InstatMap | undefined {
   if (key in INSTAT_FIELD_MAP) return (INSTAT_FIELD_MAP as any)[key];
   if (key.startsWith("m_")) {
     const base = key.slice(2);
@@ -267,6 +267,41 @@ function instatForKey(key: string): InstatMap | undefined {
     };
   }
   return undefined;
+}
+
+/** Riga descrittiva del mapping di una statistica esportabile. */
+export interface FieldMappingRow {
+  key: string;
+  label: string;
+  group: string;
+  mode: "Stagione" | "Ultima partita";
+  unit: string;
+  instat: string;
+  wyscout: string;
+  fbref: string;
+  also: string;
+}
+
+/** Ritorna tutte le righe di mapping per la UI "Mapping campi". */
+export function getAllFieldMappings(): FieldMappingRow[] {
+  const rows: FieldMappingRow[] = [];
+  const push = (mode: "Stagione" | "Ultima partita", group: string, f: { k: string; label: string; unit?: string }) => {
+    const m = instatForKey(f.k);
+    rows.push({
+      key: f.k,
+      label: f.label,
+      group,
+      mode,
+      unit: f.unit || "",
+      instat: m?.instat || "",
+      wyscout: m?.wyscout || "",
+      fbref: m?.fbref || "",
+      also: m?.also || "",
+    });
+  };
+  STATS_GROUPS.forEach((g) => g.fields.forEach((f) => push("Stagione", g.label, f as any)));
+  STATS_MATCH_GROUPS.forEach((g) => g.fields.forEach((f) => push("Ultima partita", g.label, f as any)));
+  return rows;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
