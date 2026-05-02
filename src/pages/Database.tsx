@@ -166,6 +166,11 @@ export default function Database() {
                   onClick={() => setView("list")}
                   className={`px-3 py-1.5 font-mono text-xs uppercase tracking-[0.12rem] ${view === "list" ? "bg-accent text-background" : "text-gray-soft"}`}
                 >List</button>
+                <button
+                  onClick={() => setView("mapping")}
+                  className={`px-3 py-1.5 font-mono text-xs uppercase tracking-[0.12rem] ${view === "mapping" ? "bg-accent text-background" : "text-gray-soft"}`}
+                  title="Mapping campi statistici DM Scout ↔ InStat / Wyscout / FBref"
+                >Mapping</button>
               </div>
               <button
                 onClick={() => setOnlyShortlist((v) => !v)}
