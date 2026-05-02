@@ -20,6 +20,7 @@ export default function Database() {
   const [tag, setTag] = useState<string>("all");
   const [verdict, setVerdict] = useState<string>("all");
   const [tactical, setTactical] = useState<string>("all");
+  const [league, setLeague] = useState<string>("all");
   const [sort, setSort] = useState<string>("overall_desc");
   const [view, setView] = useState<ViewMode>("grid");
   const [onlyShortlist, setOnlyShortlist] = useState(false);
@@ -31,6 +32,12 @@ export default function Database() {
   const tacticalRoleOptions = useMemo(() => {
     const set = new Set<string>();
     players.forEach((p) => p.tactical_roles.forEach((r) => set.add(r.role)));
+    return Array.from(set).sort();
+  }, [players]);
+
+  const leagueOptions = useMemo(() => {
+    const set = new Set<string>();
+    players.forEach((p) => { if (p.league) set.add(p.league); });
     return Array.from(set).sort();
   }, [players]);
 
