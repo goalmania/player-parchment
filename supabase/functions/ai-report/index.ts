@@ -169,6 +169,19 @@ const TOOL = {
             required: ["row", "col", "intensity"],
           },
         },
+        stats_source: {
+          type: "string",
+          description: "Fonte delle statistiche (es. 'InStat', 'Wyscout', 'FBref', 'PDF report club', 'Transfermarkt'). Solo se desumibile dal testo o dal documento caricato.",
+        },
+        stats_season: {
+          type: "string",
+          description: "Stagione di riferimento delle statistiche, es. '2024/25' o '2025'. Solo se presente nel testo.",
+        },
+        stats: {
+          type: "object",
+          description: "Statistiche stagionali e/o ultima partita estratte dal testo. Compila SOLO i campi presenti o chiaramente desumibili (NON inventare numeri). Usa le chiavi InStat/Wyscout/FBref tradotte alle chiavi DM Scout. Le metriche dell'ultima partita usano il prefisso 'm_' (es. m_goals, m_passes, m_pass_accuracy).",
+          additionalProperties: { type: "number" },
+        },
       },
       required: [
         "name", "age", "birth_year", "nationality", "flag", "position_main", "position_code",
