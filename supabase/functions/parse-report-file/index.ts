@@ -66,6 +66,9 @@ serve(async (req) => {
     // Riusa la edge function ai-report
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const ANON = Deno.env.get("SUPABASE_ANON_KEY");
+    // Mandiamo fino a 24k caratteri (Gemini gestisce contesti molto più ampi)
+    // così la sezione statistiche di un report InStat/Wyscout non viene troncata.
+    const aiText = text.slice(0, 24000);
     const aiResp = await fetch(`${SUPABASE_URL}/functions/v1/ai-report`, {
       method: "POST",
       headers: {
@@ -73,10 +76,21 @@ serve(async (req) => {
         apikey: ANON || "",
         Authorization: `Bearer ${ANON}`,
       },
-      body: JSON.stringify({ text, name, club }),
+      body: JSON.stringify({ text: aiText, name, club }),
     });
 
     const data = await aiResp.json();
+
+    // Default stats_source dal nome file se l'AI non l'ha dedotto
+    if (data?.player && !data.player.stats_source) {
+      const lf = lower;
+      if (lf.includes("instat")) data.player.stats_source = "InStat";
+      else if (lf.includes("wyscout")) data.player.stats_source = "Wyscout";
+      else if (lf.includes("fbref")) data.player.stats_source = "FBref";
+      else if (lf.includes("transfermarkt")) data.player.stats_source = "Transfermarkt";
+      else data.player.stats_source = `Upload: ${fileName}`;
+    }
+
     return new Response(JSON.stringify({ ...data, extracted_text: text.slice(0, 8000) }), {
       status: aiResp.status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
