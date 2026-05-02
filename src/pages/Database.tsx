@@ -76,7 +76,7 @@ export default function Database() {
       }
     });
     return list;
-  }, [players, search, pos, foot, age, tag, verdict, tactical, sort, onlyShortlist, shortlistTick]);
+  }, [players, search, pos, foot, age, tag, verdict, tactical, league, sort, onlyShortlist, shortlistTick]);
 
   const handleImport = async (file: File) => {
     try {
