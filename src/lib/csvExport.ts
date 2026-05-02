@@ -2,7 +2,7 @@ import type { Player, PlayerStats } from "./types";
 import { STATS_GROUPS, STATS_MATCH_GROUPS } from "./types";
 
 /** Versione del formato di export — cambiala se modifichi la struttura del CSV. */
-export const CSV_EXPORT_VERSION = "2.1";
+export const CSV_EXPORT_VERSION = "2.2";
 
 /** Escape a CSV cell per RFC 4180 (quotes, commas, newlines). */
 function csvCell(v: unknown): string {
@@ -107,139 +107,143 @@ function score(v: number | null | undefined): number | string {
 interface InstatMap {
   /** Etichetta InStat ufficiale o equivalente più vicino. */
   instat: string;
-  /** Naming usato anche in Wyscout / FBref / altri (per riferimento). */
+  /** Alias Wyscout (terminologia ufficiale Wyscout/Hudl). */
+  wyscout?: string;
+  /** Alias FBref (terminologia ufficiale StatsBomb/FBref). */
+  fbref?: string;
+  /** Eventuali altri alias (Opta, Sofascore, ecc.). */
   also?: string;
 }
 
 export const INSTAT_FIELD_MAP: Partial<Record<keyof PlayerStats, InstatMap>> = {
   // Apparizioni
-  matches: { instat: "Matches played", also: "Apps" },
-  matches_started: { instat: "Matches started", also: "Starts" },
-  matches_subbed_in: { instat: "Substituted in" },
-  matches_subbed_out: { instat: "Substituted out" },
-  minutes: { instat: "Minutes played" },
-  minutes_per_match: { instat: "Minutes per match" },
-  yellow_cards: { instat: "Yellow cards" },
-  yellow_red_cards: { instat: "Second yellow cards" },
-  red_cards: { instat: "Red cards" },
-  fouls_per_match: { instat: "Fouls per match" },
+  matches: { instat: "Matches played", wyscout: "Matches played", fbref: "MP", also: "Apps" },
+  matches_started: { instat: "Matches started", wyscout: "Starting lineups", fbref: "Starts" },
+  matches_subbed_in: { instat: "Substituted in", wyscout: "Subs on" },
+  matches_subbed_out: { instat: "Substituted out", wyscout: "Subs off" },
+  minutes: { instat: "Minutes played", wyscout: "Minutes played", fbref: "Min" },
+  minutes_per_match: { instat: "Minutes per match", fbref: "Mn/MP" },
+  yellow_cards: { instat: "Yellow cards", wyscout: "Yellow cards", fbref: "CrdY" },
+  yellow_red_cards: { instat: "Second yellow cards", wyscout: "Second yellow cards", fbref: "2CrdY" },
+  red_cards: { instat: "Red cards", wyscout: "Red cards", fbref: "CrdR" },
+  fouls_per_match: { instat: "Fouls per match", wyscout: "Fouls per 90", fbref: "Fls/90" },
 
   // Offensive
-  goals: { instat: "Goals" },
-  goals_per_90: { instat: "Goals per 90", also: "Gls/90" },
-  non_penalty_goals: { instat: "Non-penalty goals", also: "npG" },
-  assists: { instat: "Assists" },
-  assists_per_90: { instat: "Assists per 90", also: "Ast/90" },
-  goal_contributions: { instat: "Goals + Assists", also: "G+A" },
-  shots: { instat: "Shots" },
-  shots_per_90: { instat: "Shots per 90" },
-  shots_on_target: { instat: "Shots on target" },
-  shots_on_target_pct: { instat: "Shots on target, %" },
-  shots_blocked: { instat: "Shots blocked" },
-  shots_off_target: { instat: "Shots off target" },
-  xg: { instat: "xG" },
-  xg_per_90: { instat: "xG per 90" },
-  xa: { instat: "xA" },
-  xa_per_90: { instat: "xA per 90" },
-  npxg: { instat: "Non-penalty xG", also: "npxG" },
-  npxg_per_90: { instat: "Non-penalty xG per 90" },
-  xg_overperformance: { instat: "Goals minus xG", also: "G-xG" },
-  goal_conversion: { instat: "Goal conversion, %" },
-  big_chances_created: { instat: "Big chances created" },
-  big_chances_missed: { instat: "Big chances missed" },
-  penalties_scored: { instat: "Penalties scored" },
-  penalties_taken: { instat: "Penalties taken" },
-  penalty_conversion: { instat: "Penalty conversion, %" },
-  free_kick_goals: { instat: "Free kick goals" },
-  headed_goals: { instat: "Headed goals" },
+  goals: { instat: "Goals", wyscout: "Goals", fbref: "Gls" },
+  goals_per_90: { instat: "Goals per 90", wyscout: "Goals per 90", fbref: "Gls/90", also: "G/90" },
+  non_penalty_goals: { instat: "Non-penalty goals", wyscout: "Non-penalty goals", fbref: "G-PK", also: "npG" },
+  assists: { instat: "Assists", wyscout: "Assists", fbref: "Ast" },
+  assists_per_90: { instat: "Assists per 90", wyscout: "Assists per 90", fbref: "Ast/90" },
+  goal_contributions: { instat: "Goals + Assists", wyscout: "Goals + Assists", fbref: "G+A" },
+  shots: { instat: "Shots", wyscout: "Shots", fbref: "Sh" },
+  shots_per_90: { instat: "Shots per 90", wyscout: "Shots per 90", fbref: "Sh/90" },
+  shots_on_target: { instat: "Shots on target", wyscout: "Shots on target", fbref: "SoT" },
+  shots_on_target_pct: { instat: "Shots on target, %", wyscout: "Shots on target, %", fbref: "SoT%" },
+  shots_blocked: { instat: "Shots blocked", wyscout: "Shots blocked" },
+  shots_off_target: { instat: "Shots off target", wyscout: "Shots off target" },
+  xg: { instat: "xG", wyscout: "xG", fbref: "xG" },
+  xg_per_90: { instat: "xG per 90", wyscout: "xG per 90", fbref: "xG/90" },
+  xa: { instat: "xA", wyscout: "xA", fbref: "xAG" },
+  xa_per_90: { instat: "xA per 90", wyscout: "xA per 90", fbref: "xAG/90" },
+  npxg: { instat: "Non-penalty xG", wyscout: "Non-penalty xG", fbref: "npxG" },
+  npxg_per_90: { instat: "Non-penalty xG per 90", wyscout: "npxG per 90", fbref: "npxG/90" },
+  xg_overperformance: { instat: "Goals minus xG", wyscout: "Goals - xG", fbref: "G-xG" },
+  goal_conversion: { instat: "Goal conversion, %", wyscout: "Goal conversion, %", fbref: "G/Sh" },
+  big_chances_created: { instat: "Big chances created", wyscout: "Big chances created", also: "BCC (Opta)" },
+  big_chances_missed: { instat: "Big chances missed", wyscout: "Big chances missed" },
+  penalties_scored: { instat: "Penalties scored", wyscout: "Penalty goals", fbref: "PK" },
+  penalties_taken: { instat: "Penalties taken", wyscout: "Penalties taken", fbref: "PKatt" },
+  penalty_conversion: { instat: "Penalty conversion, %", wyscout: "Penalty conversion, %" },
+  free_kick_goals: { instat: "Free kick goals", wyscout: "Direct free kick goals", fbref: "FK" },
+  headed_goals: { instat: "Headed goals", wyscout: "Head goals" },
 
   // Passing
-  passes: { instat: "Passes" },
-  passes_per_90: { instat: "Passes per 90" },
-  passes_completed: { instat: "Accurate passes", also: "Cmp" },
-  pass_accuracy: { instat: "Pass accuracy, %" },
-  key_passes: { instat: "Key passes" },
-  key_passes_per_90: { instat: "Key passes per 90" },
-  through_balls: { instat: "Through passes", also: "Through balls" },
-  through_ball_accuracy: { instat: "Through pass accuracy, %" },
-  long_balls: { instat: "Long passes" },
-  long_ball_accuracy: { instat: "Long pass accuracy, %" },
-  crosses: { instat: "Crosses" },
-  crosses_completed: { instat: "Accurate crosses" },
-  cross_accuracy: { instat: "Cross accuracy, %" },
-  forward_passes: { instat: "Forward passes" },
-  back_passes: { instat: "Back passes" },
-  passes_into_final_third: { instat: "Passes to final third" },
-  passes_into_box: { instat: "Passes to penalty area" },
-  smart_passes: { instat: "Smart passes" },
-  smart_passes_completed: { instat: "Accurate smart passes" },
-  progressive_passes: { instat: "Progressive passes" },
+  passes: { instat: "Passes", wyscout: "Passes", fbref: "Att" },
+  passes_per_90: { instat: "Passes per 90", wyscout: "Passes per 90" },
+  passes_completed: { instat: "Accurate passes", wyscout: "Accurate passes", fbref: "Cmp" },
+  pass_accuracy: { instat: "Pass accuracy, %", wyscout: "Accurate passes, %", fbref: "Cmp%" },
+  key_passes: { instat: "Key passes", wyscout: "Key passes", fbref: "KP" },
+  key_passes_per_90: { instat: "Key passes per 90", wyscout: "Key passes per 90" },
+  through_balls: { instat: "Through passes", wyscout: "Through passes", fbref: "TB", also: "Through balls" },
+  through_ball_accuracy: { instat: "Through pass accuracy, %", wyscout: "Accurate through passes, %" },
+  long_balls: { instat: "Long passes", wyscout: "Long passes", fbref: "Long Att" },
+  long_ball_accuracy: { instat: "Long pass accuracy, %", wyscout: "Accurate long passes, %", fbref: "Long Cmp%" },
+  crosses: { instat: "Crosses", wyscout: "Crosses", fbref: "Crs" },
+  crosses_completed: { instat: "Accurate crosses", wyscout: "Accurate crosses" },
+  cross_accuracy: { instat: "Cross accuracy, %", wyscout: "Accurate crosses, %" },
+  forward_passes: { instat: "Forward passes", wyscout: "Forward passes" },
+  back_passes: { instat: "Back passes", wyscout: "Back passes" },
+  passes_into_final_third: { instat: "Passes to final third", wyscout: "Passes to final third", fbref: "1/3" },
+  passes_into_box: { instat: "Passes to penalty area", wyscout: "Passes to penalty area", fbref: "PPA" },
+  smart_passes: { instat: "Smart passes", wyscout: "Smart passes" },
+  smart_passes_completed: { instat: "Accurate smart passes", wyscout: "Accurate smart passes" },
+  progressive_passes: { instat: "Progressive passes", wyscout: "Progressive passes", fbref: "PrgP" },
 
   // Possesso / dribbling
-  touches: { instat: "Touches" },
-  touches_in_box: { instat: "Touches in penalty area" },
-  dribbles: { instat: "Dribbles" },
-  dribbles_completed: { instat: "Successful dribbles" },
-  dribble_success: { instat: "Dribbles success, %" },
-  progressive_carries: { instat: "Progressive runs" },
-  carries_into_final_third: { instat: "Carries into final third" },
-  carries_into_box: { instat: "Carries into penalty area" },
-  lost_balls: { instat: "Losses", also: "Ball losses" },
-  recoveries: { instat: "Ball recoveries" },
-  successful_attacking_actions: { instat: "Successful attacking actions" },
-  successful_defensive_actions: { instat: "Successful defensive actions" },
+  touches: { instat: "Touches", wyscout: "Touches", fbref: "Touches" },
+  touches_in_box: { instat: "Touches in penalty area", wyscout: "Touches in box", fbref: "Att Pen" },
+  dribbles: { instat: "Dribbles", wyscout: "Dribbles", fbref: "Att (Take-Ons)" },
+  dribbles_completed: { instat: "Successful dribbles", wyscout: "Successful dribbles", fbref: "Succ" },
+  dribble_success: { instat: "Dribbles success, %", wyscout: "Successful dribbles, %", fbref: "Succ%" },
+  progressive_carries: { instat: "Progressive runs", wyscout: "Progressive runs", fbref: "PrgC" },
+  carries_into_final_third: { instat: "Carries into final third", wyscout: "Runs to final third", fbref: "1/3 (Carries)" },
+  carries_into_box: { instat: "Carries into penalty area", wyscout: "Runs to penalty area", fbref: "CPA" },
+  lost_balls: { instat: "Losses", wyscout: "Losses", also: "Ball losses" },
+  recoveries: { instat: "Ball recoveries", wyscout: "Recoveries", fbref: "Recov" },
+  successful_attacking_actions: { instat: "Successful attacking actions", wyscout: "Successful attacking actions" },
+  successful_defensive_actions: { instat: "Successful defensive actions", wyscout: "Successful defensive actions" },
 
   // Difensive
-  tackles: { instat: "Tackles", also: "Sliding tackles" },
-  tackles_per_90: { instat: "Tackles per 90" },
-  tackles_won: { instat: "Successful tackles" },
-  tackle_success: { instat: "Tackle success, %" },
-  interceptions: { instat: "Interceptions" },
-  interceptions_per_90: { instat: "Interceptions per 90" },
-  blocks: { instat: "Shots blocked", also: "Blocks" },
-  clearances: { instat: "Clearances" },
-  duels_won: { instat: "Duels won" },
-  duels_total: { instat: "Total duels" },
-  duel_success: { instat: "Duels won, %" },
-  aerial_duels_won: { instat: "Aerial duels won" },
-  aerial_duels_total: { instat: "Aerial duels" },
-  aerial_duel_success: { instat: "Aerial duels won, %" },
-  ground_duels_won: { instat: "Ground duels won" },
-  ground_duels_total: { instat: "Ground duels" },
-  ground_duel_success: { instat: "Ground duels won, %" },
-  fouls_committed: { instat: "Fouls" },
-  fouls_drawn: { instat: "Fouls suffered" },
-  offsides: { instat: "Offsides" },
-  errors_leading_to_goal: { instat: "Errors leading to goal" },
-  errors_leading_to_shot: { instat: "Errors leading to shot" },
+  tackles: { instat: "Tackles", wyscout: "Sliding tackles", fbref: "Tkl", also: "Sliding tackles" },
+  tackles_per_90: { instat: "Tackles per 90", wyscout: "Sliding tackles per 90", fbref: "Tkl/90" },
+  tackles_won: { instat: "Successful tackles", wyscout: "Successful sliding tackles", fbref: "TklW" },
+  tackle_success: { instat: "Tackle success, %", wyscout: "Successful sliding tackles, %", fbref: "Tkl%" },
+  interceptions: { instat: "Interceptions", wyscout: "Interceptions", fbref: "Int" },
+  interceptions_per_90: { instat: "Interceptions per 90", wyscout: "Interceptions per 90", fbref: "Int/90" },
+  blocks: { instat: "Shots blocked", wyscout: "Shots blocked", fbref: "Blocks", also: "Blocks" },
+  clearances: { instat: "Clearances", wyscout: "Clearances", fbref: "Clr" },
+  duels_won: { instat: "Duels won", wyscout: "Defensive duels won" },
+  duels_total: { instat: "Total duels", wyscout: "Defensive duels" },
+  duel_success: { instat: "Duels won, %", wyscout: "Defensive duels won, %" },
+  aerial_duels_won: { instat: "Aerial duels won", wyscout: "Aerial duels won", fbref: "Won (Aerial)" },
+  aerial_duels_total: { instat: "Aerial duels", wyscout: "Aerial duels", fbref: "Aerial" },
+  aerial_duel_success: { instat: "Aerial duels won, %", wyscout: "Aerial duels won, %", fbref: "Won% (Aerial)" },
+  ground_duels_won: { instat: "Ground duels won", wyscout: "Offensive duels won" },
+  ground_duels_total: { instat: "Ground duels", wyscout: "Offensive duels" },
+  ground_duel_success: { instat: "Ground duels won, %", wyscout: "Offensive duels won, %" },
+  fouls_committed: { instat: "Fouls", wyscout: "Fouls", fbref: "Fls" },
+  fouls_drawn: { instat: "Fouls suffered", wyscout: "Fouls suffered", fbref: "Fld" },
+  offsides: { instat: "Offsides", wyscout: "Offsides", fbref: "Off" },
+  errors_leading_to_goal: { instat: "Errors leading to goal", wyscout: "Errors leading to goal", fbref: "Err" },
+  errors_leading_to_shot: { instat: "Errors leading to shot", wyscout: "Errors leading to shot" },
 
   // Atletici
-  distance_km: { instat: "Distance covered, km" },
-  distance_per_match_km: { instat: "Distance per match, km" },
-  sprints: { instat: "Sprints" },
-  sprints_per_match: { instat: "Sprints per match" },
-  high_intensity_runs: { instat: "High intensity runs" },
-  top_speed_kmh: { instat: "Top speed, km/h" },
-  avg_speed_kmh: { instat: "Average speed, km/h" },
+  distance_km: { instat: "Distance covered, km", wyscout: "Total distance, km" },
+  distance_per_match_km: { instat: "Distance per match, km", wyscout: "Distance per 90, km" },
+  sprints: { instat: "Sprints", wyscout: "Sprints" },
+  sprints_per_match: { instat: "Sprints per match", wyscout: "Sprints per 90" },
+  high_intensity_runs: { instat: "High intensity runs", wyscout: "High intensity runs" },
+  top_speed_kmh: { instat: "Top speed, km/h", wyscout: "Max speed, km/h" },
+  avg_speed_kmh: { instat: "Average speed, km/h", wyscout: "Average speed, km/h" },
 
   // Portiere
-  saves: { instat: "Saves" },
-  saves_per_90: { instat: "Saves per 90" },
-  save_pct: { instat: "Save percentage" },
-  clean_sheets: { instat: "Clean sheets" },
-  goals_conceded: { instat: "Goals conceded" },
-  goals_conceded_per_90: { instat: "Goals conceded per 90" },
-  psxg: { instat: "Post-shot xG", also: "PSxG" },
-  psxg_minus_goals: { instat: "PSxG minus goals" },
-  punches: { instat: "Punches" },
-  high_claims: { instat: "High claims" },
-  sweeper_actions: { instat: "Sweeper actions", also: "Defensive actions outside box" },
-  goal_kicks: { instat: "Goal kicks" },
-  goal_kick_accuracy: { instat: "Goal kick accuracy, %" },
+  saves: { instat: "Saves", wyscout: "Saves", fbref: "Saves" },
+  saves_per_90: { instat: "Saves per 90", wyscout: "Saves per 90" },
+  save_pct: { instat: "Save percentage", wyscout: "Save rate, %", fbref: "Save%" },
+  clean_sheets: { instat: "Clean sheets", wyscout: "Clean sheets", fbref: "CS" },
+  goals_conceded: { instat: "Goals conceded", wyscout: "Conceded goals", fbref: "GA" },
+  goals_conceded_per_90: { instat: "Goals conceded per 90", wyscout: "Conceded goals per 90", fbref: "GA90" },
+  psxg: { instat: "Post-shot xG", wyscout: "xG against", fbref: "PSxG", also: "PSxG" },
+  psxg_minus_goals: { instat: "PSxG minus goals", fbref: "PSxG+/-" },
+  punches: { instat: "Punches", wyscout: "Punches" },
+  high_claims: { instat: "High claims", wyscout: "Aerial duels (GK)" },
+  sweeper_actions: { instat: "Sweeper actions", wyscout: "Exits", fbref: "#OPA", also: "Defensive actions outside box" },
+  goal_kicks: { instat: "Goal kicks", wyscout: "Goal kicks", fbref: "GK" },
+  goal_kick_accuracy: { instat: "Goal kick accuracy, %", wyscout: "Accurate goal kicks, %" },
 
   // Indici
   instat_index: { instat: "InStat Index" },
-  avg_rating: { instat: "Average rating" },
+  avg_rating: { instat: "Average rating", wyscout: "Average rating", fbref: "Rating" },
 };
 
 /** Helper per derivare il mapping match (m_*) dal mapping stagione. */
@@ -248,7 +252,12 @@ function instatForKey(key: string): InstatMap | undefined {
   if (key.startsWith("m_")) {
     const base = key.slice(2);
     const m = (INSTAT_FIELD_MAP as any)[base] as InstatMap | undefined;
-    if (m) return { instat: `${m.instat} (last match)`, also: m.also };
+    if (m) return {
+      instat: `${m.instat} (last match)`,
+      wyscout: m.wyscout ? `${m.wyscout} (last match)` : undefined,
+      fbref: m.fbref ? `${m.fbref} (last match)` : undefined,
+      also: m.also,
+    };
   }
   return undefined;
 }
@@ -282,14 +291,14 @@ function metaRows(opts: {
   return rows;
 }
 
-/** Sezione mapping InStat: chiave interna ↔ nome InStat ↔ alias ↔ unità. */
+/** Sezione mapping InStat: chiave interna ↔ nome InStat ↔ Wyscout ↔ FBref ↔ alias ↔ unità. */
 function instatMappingRows(usedKeys: Set<string>): (string | number | null | undefined)[][] {
   const rows: (string | number | null | undefined)[][] = [];
   rows.push(["# MAPPING INSTAT"]);
   rows.push([
     "Riferimento per importare/esportare verso InStat, Wyscout, FBref. Solo i campi presenti nell'export sono elencati.",
   ]);
-  rows.push(["Chiave DM Scout", "Nome InStat", "Alias (Wyscout/FBref)", "Unità", "Modalità"]);
+  rows.push(["Chiave DM Scout", "Nome InStat", "Alias Wyscout", "Alias FBref", "Altri alias", "Unità", "Modalità"]);
 
   const allFields = [
     ...STATS_GROUPS.flatMap((g) => g.fields.map((f) => ({ ...f, mode: "Stagione" }))),
@@ -303,6 +312,8 @@ function instatMappingRows(usedKeys: Set<string>): (string | number | null | und
     rows.push([
       key,
       map?.instat || "",
+      map?.wyscout || "",
+      map?.fbref || "",
       map?.also || "",
       f.unit || "",
       f.mode,

@@ -20,6 +20,7 @@ export default function Database() {
   const [tag, setTag] = useState<string>("all");
   const [verdict, setVerdict] = useState<string>("all");
   const [tactical, setTactical] = useState<string>("all");
+  const [league, setLeague] = useState<string>("all");
   const [sort, setSort] = useState<string>("overall_desc");
   const [view, setView] = useState<ViewMode>("grid");
   const [onlyShortlist, setOnlyShortlist] = useState(false);
@@ -34,13 +35,19 @@ export default function Database() {
     return Array.from(set).sort();
   }, [players]);
 
+  const leagueOptions = useMemo(() => {
+    const set = new Set<string>();
+    players.forEach((p) => { if (p.league) set.add(p.league); });
+    return Array.from(set).sort();
+  }, [players]);
+
   const filtered = useMemo(() => {
     const sl = onlyShortlist ? getShortlist() : null;
     let list = players.filter((p) => {
       if (sl && !sl.has(p.id)) return false;
       if (search) {
         const s = search.toLowerCase();
-        if (![p.name, p.club, p.position_main].some((v) => v.toLowerCase().includes(s))) return false;
+        if (![p.name, p.club, p.position_main, p.league].some((v) => (v || "").toLowerCase().includes(s))) return false;
       }
       if (pos !== "all" && p.position_code !== pos) return false;
       if (foot !== "all" && p.foot !== foot) return false;
@@ -53,6 +60,7 @@ export default function Database() {
       if (tag !== "all" && !p.tags.includes(tag)) return false;
       if (verdict !== "all" && p.verdict_type !== verdict) return false;
       if (tactical !== "all" && !p.tactical_roles.some((r) => r.role === tactical)) return false;
+      if (league !== "all" && p.league !== league) return false;
       return true;
     });
 
@@ -68,7 +76,7 @@ export default function Database() {
       }
     });
     return list;
-  }, [players, search, pos, foot, age, tag, verdict, tactical, sort, onlyShortlist, shortlistTick]);
+  }, [players, search, pos, foot, age, tag, verdict, tactical, league, sort, onlyShortlist, shortlistTick]);
 
   const handleImport = async (file: File) => {
     try {
@@ -94,10 +102,10 @@ export default function Database() {
         style={{ top: "var(--nav-height)", background: "hsl(0 0% 4% / 0.92)" }}
       >
         <div className="container py-3">
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-2">
             <input
               className="dm-input col-span-2 lg:col-span-2"
-              placeholder="Cerca nome, club, ruolo…"
+              placeholder="Cerca nome, club, ruolo, campionato…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -131,6 +139,10 @@ export default function Database() {
             <select className="dm-input" value={tactical} onChange={(e) => setTactical(e.target.value)}>
               <option value="all">Ruolo Tattico</option>
               {tacticalRoleOptions.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+            <select className="dm-input" value={league} onChange={(e) => setLeague(e.target.value)}>
+              <option value="all">Campionato</option>
+              {leagueOptions.map((l) => <option key={l} value={l}>{l}</option>)}
             </select>
             <select className="dm-input" value={sort} onChange={(e) => setSort(e.target.value)}>
               <option value="overall_desc">Overall ↓</option>
