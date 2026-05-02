@@ -97,6 +97,13 @@ function score(v: number | null | undefined): number | string {
   return v as number;
 }
 
+/** Restituisce null (cella CSV vuota) per stringhe mancanti/vuote, evitando "" ambigue. */
+function emptyIfMissing(v: string | null | undefined): string | null {
+  if (v === null || v === undefined) return null;
+  const s = String(v).trim();
+  return s.length === 0 ? null : s;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Mapping InStat
 //
