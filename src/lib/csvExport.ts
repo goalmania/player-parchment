@@ -443,7 +443,7 @@ export function playerToCsv(p: Player): string {
         usedKeys.add(key);
         const cell = statValue(key, v as number);
         const map = instatForKey(key);
-        rows.push(["Ultima partita", g.label, label, key, map?.instat || "", cell, unit || ""]);
+        rows.push(["Ultima partita", g.label, label, key, emptyIfMissing(map?.instat), cell, emptyIfMissing(unit)]);
       });
     });
     rows.push([]);
@@ -461,7 +461,7 @@ export function playerToCsv(p: Player): string {
         usedKeys.add(key);
         const cell = statValue(key, v as number);
         const map = instatForKey(key);
-        rows.push(["Stagione", g.label, label, key, map?.instat || "", cell, unit || ""]);
+        rows.push(["Stagione", g.label, label, key, emptyIfMissing(map?.instat), cell, emptyIfMissing(unit)]);
       });
     });
     rows.push([]);
