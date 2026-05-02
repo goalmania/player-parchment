@@ -203,7 +203,7 @@ export default function Database() {
 
       {/* Results */}
       <section className="container py-8">
-        {filtered.length === 0 && (
+        {view !== "mapping" && filtered.length === 0 && (
           <div className="dm-card p-10 text-center text-gray-soft">Nessun giocatore corrisponde ai filtri.</div>
         )}
 
@@ -249,7 +249,87 @@ export default function Database() {
             </table>
           </div>
         )}
+
+        {view === "mapping" && <MappingView />}
       </section>
     </PageShell>
+  );
+}
+
+function MappingView() {
+  const [q, setQ] = useState("");
+  const [mode, setMode] = useState<"all" | "Stagione" | "Ultima partita">("all");
+  const all = useMemo(() => getAllFieldMappings(), []);
+  const rows = useMemo(() => {
+    const s = q.toLowerCase().trim();
+    return all.filter((r) => {
+      if (mode !== "all" && r.mode !== mode) return false;
+      if (!s) return true;
+      return [r.key, r.label, r.group, r.instat, r.wyscout, r.fbref, r.also]
+        .some((v) => (v || "").toLowerCase().includes(s));
+    });
+  }, [all, q, mode]);
+
+  return (
+    <div className="space-y-4">
+      <div className="dm-card p-4">
+        <div className="section-label mb-2">// MAPPING CAMPI STATISTICI</div>
+        <p className="text-sm text-gray-soft mb-3">
+          Per ogni statistica esportabile in CSV, vedi qui il nome usato in DM Scout e gli alias corrispondenti
+          su <strong className="text-foreground">InStat</strong>, <strong className="text-foreground">Wyscout</strong> e <strong className="text-foreground">FBref</strong>.
+          Le celle vuote indicano che non esiste un nome ufficiale equivalente per quella fonte.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <input
+            className="dm-input flex-1 min-w-[200px]"
+            placeholder="Cerca chiave, etichetta, alias…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+          <select className="dm-input" value={mode} onChange={(e) => setMode(e.target.value as any)}>
+            <option value="all">Tutte le modalità</option>
+            <option value="Stagione">Stagione</option>
+            <option value="Ultima partita">Ultima partita</option>
+          </select>
+        </div>
+        <div className="text-xs text-gray-soft mt-2 font-mono">{rows.length} campi</div>
+      </div>
+
+      <div className="border-hairline overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="border-hairline-b bg-gray-light sticky top-0">
+            <tr className="text-left font-mono text-xs uppercase tracking-[0.12rem] text-gray-soft">
+              <th className="p-3">Chiave DM Scout</th>
+              <th className="p-3">Etichetta</th>
+              <th className="p-3 hidden md:table-cell">Gruppo</th>
+              <th className="p-3">InStat</th>
+              <th className="p-3">Wyscout</th>
+              <th className="p-3">FBref</th>
+              <th className="p-3 hidden lg:table-cell">Altri alias</th>
+              <th className="p-3">Unità</th>
+              <th className="p-3">Modalità</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={`${r.mode}-${r.key}`} className="border-hairline-t hover:bg-gray-light/50">
+                <td className="p-3 font-mono text-xs text-accent-lime">{r.key}</td>
+                <td className="p-3">{r.label}</td>
+                <td className="p-3 text-gray-soft hidden md:table-cell">{r.group}</td>
+                <td className="p-3">{r.instat || <span className="text-gray-soft/50">—</span>}</td>
+                <td className="p-3">{r.wyscout || <span className="text-gray-soft/50">—</span>}</td>
+                <td className="p-3">{r.fbref || <span className="text-gray-soft/50">—</span>}</td>
+                <td className="p-3 text-gray-soft hidden lg:table-cell">{r.also || <span className="text-gray-soft/50">—</span>}</td>
+                <td className="p-3 font-mono text-xs text-gray-soft">{r.unit || "—"}</td>
+                <td className="p-3 font-mono text-xs">{r.mode === "Stagione" ? "S" : "M"}</td>
+              </tr>
+            ))}
+            {rows.length === 0 && (
+              <tr><td colSpan={9} className="p-6 text-center text-gray-soft">Nessun campo corrisponde alla ricerca.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
