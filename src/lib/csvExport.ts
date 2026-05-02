@@ -97,6 +97,13 @@ function score(v: number | null | undefined): number | string {
   return v as number;
 }
 
+/** Restituisce null (cella CSV vuota) per stringhe mancanti/vuote, evitando "" ambigue. */
+function emptyIfMissing(v: string | null | undefined): string | null {
+  if (v === null || v === undefined) return null;
+  const s = String(v).trim();
+  return s.length === 0 ? null : s;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Mapping InStat
 //
@@ -247,7 +254,7 @@ export const INSTAT_FIELD_MAP: Partial<Record<keyof PlayerStats, InstatMap>> = {
 };
 
 /** Helper per derivare il mapping match (m_*) dal mapping stagione. */
-function instatForKey(key: string): InstatMap | undefined {
+export function instatForKey(key: string): InstatMap | undefined {
   if (key in INSTAT_FIELD_MAP) return (INSTAT_FIELD_MAP as any)[key];
   if (key.startsWith("m_")) {
     const base = key.slice(2);
@@ -260,6 +267,41 @@ function instatForKey(key: string): InstatMap | undefined {
     };
   }
   return undefined;
+}
+
+/** Riga descrittiva del mapping di una statistica esportabile. */
+export interface FieldMappingRow {
+  key: string;
+  label: string;
+  group: string;
+  mode: "Stagione" | "Ultima partita";
+  unit: string;
+  instat: string;
+  wyscout: string;
+  fbref: string;
+  also: string;
+}
+
+/** Ritorna tutte le righe di mapping per la UI "Mapping campi". */
+export function getAllFieldMappings(): FieldMappingRow[] {
+  const rows: FieldMappingRow[] = [];
+  const push = (mode: "Stagione" | "Ultima partita", group: string, f: { k: string; label: string; unit?: string }) => {
+    const m = instatForKey(f.k);
+    rows.push({
+      key: f.k,
+      label: f.label,
+      group,
+      mode,
+      unit: f.unit || "",
+      instat: m?.instat || "",
+      wyscout: m?.wyscout || "",
+      fbref: m?.fbref || "",
+      also: m?.also || "",
+    });
+  };
+  STATS_GROUPS.forEach((g) => g.fields.forEach((f) => push("Stagione", g.label, f as any)));
+  STATS_MATCH_GROUPS.forEach((g) => g.fields.forEach((f) => push("Ultima partita", g.label, f as any)));
+  return rows;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -311,11 +353,11 @@ function instatMappingRows(usedKeys: Set<string>): (string | number | null | und
     const map = instatForKey(key);
     rows.push([
       key,
-      map?.instat || "",
-      map?.wyscout || "",
-      map?.fbref || "",
-      map?.also || "",
-      f.unit || "",
+      emptyIfMissing(map?.instat),
+      emptyIfMissing(map?.wyscout),
+      emptyIfMissing(map?.fbref),
+      emptyIfMissing(map?.also),
+      emptyIfMissing(f.unit),
       f.mode,
     ]);
   }
@@ -436,7 +478,7 @@ export function playerToCsv(p: Player): string {
         usedKeys.add(key);
         const cell = statValue(key, v as number);
         const map = instatForKey(key);
-        rows.push(["Ultima partita", g.label, label, key, map?.instat || "", cell, unit || ""]);
+        rows.push(["Ultima partita", g.label, label, key, emptyIfMissing(map?.instat), cell, emptyIfMissing(unit)]);
       });
     });
     rows.push([]);
@@ -454,7 +496,7 @@ export function playerToCsv(p: Player): string {
         usedKeys.add(key);
         const cell = statValue(key, v as number);
         const map = instatForKey(key);
-        rows.push(["Stagione", g.label, label, key, map?.instat || "", cell, unit || ""]);
+        rows.push(["Stagione", g.label, label, key, emptyIfMissing(map?.instat), cell, emptyIfMissing(unit)]);
       });
     });
     rows.push([]);
@@ -567,9 +609,9 @@ export function comparisonToCsv(players: Player[]): string {
         usedKeys.add(key);
         const map = instatForKey(key);
         push(
-          mode, g.label, f.label, key, f.unit || "",
+          mode, g.label, f.label, key, emptyIfMissing(f.unit) ?? "",
           (p) => statValue(key, p.stats?.[f.k] as number | undefined),
-          map?.instat || "",
+          emptyIfMissing(map?.instat) ?? "",
         );
       }
     }
