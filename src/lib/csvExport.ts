@@ -574,9 +574,9 @@ export function comparisonToCsv(players: Player[]): string {
         usedKeys.add(key);
         const map = instatForKey(key);
         push(
-          mode, g.label, f.label, key, f.unit || "",
+          mode, g.label, f.label, key, emptyIfMissing(f.unit) ?? "",
           (p) => statValue(key, p.stats?.[f.k] as number | undefined),
-          map?.instat || "",
+          emptyIfMissing(map?.instat) ?? "",
         );
       }
     }
