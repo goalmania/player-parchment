@@ -252,7 +252,12 @@ function instatForKey(key: string): InstatMap | undefined {
   if (key.startsWith("m_")) {
     const base = key.slice(2);
     const m = (INSTAT_FIELD_MAP as any)[base] as InstatMap | undefined;
-    if (m) return { instat: `${m.instat} (last match)`, also: m.also };
+    if (m) return {
+      instat: `${m.instat} (last match)`,
+      wyscout: m.wyscout ? `${m.wyscout} (last match)` : undefined,
+      fbref: m.fbref ? `${m.fbref} (last match)` : undefined,
+      also: m.also,
+    };
   }
   return undefined;
 }
@@ -286,14 +291,14 @@ function metaRows(opts: {
   return rows;
 }
 
-/** Sezione mapping InStat: chiave interna ↔ nome InStat ↔ alias ↔ unità. */
+/** Sezione mapping InStat: chiave interna ↔ nome InStat ↔ Wyscout ↔ FBref ↔ alias ↔ unità. */
 function instatMappingRows(usedKeys: Set<string>): (string | number | null | undefined)[][] {
   const rows: (string | number | null | undefined)[][] = [];
   rows.push(["# MAPPING INSTAT"]);
   rows.push([
     "Riferimento per importare/esportare verso InStat, Wyscout, FBref. Solo i campi presenti nell'export sono elencati.",
   ]);
-  rows.push(["Chiave DM Scout", "Nome InStat", "Alias (Wyscout/FBref)", "Unità", "Modalità"]);
+  rows.push(["Chiave DM Scout", "Nome InStat", "Alias Wyscout", "Alias FBref", "Altri alias", "Unità", "Modalità"]);
 
   const allFields = [
     ...STATS_GROUPS.flatMap((g) => g.fields.map((f) => ({ ...f, mode: "Stagione" }))),
@@ -307,6 +312,8 @@ function instatMappingRows(usedKeys: Set<string>): (string | number | null | und
     rows.push([
       key,
       map?.instat || "",
+      map?.wyscout || "",
+      map?.fbref || "",
       map?.also || "",
       f.unit || "",
       f.mode,
