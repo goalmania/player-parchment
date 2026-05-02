@@ -307,9 +307,22 @@ Compila ORA il report completo chiamando extract_player_report. Non scrivere alt
 
     // Convert heatmap_zones into the flat 6x10 array used by the frontend.
     const heatmap = zonesToHeatmap(parsed.heatmap_zones || []);
+
+    // Sanitize stats: only finite numbers, drop everything else.
+    const cleanStats: Record<string, number> = {};
+    if (parsed.stats && typeof parsed.stats === "object") {
+      for (const [k, v] of Object.entries(parsed.stats)) {
+        const n = typeof v === "number" ? v : Number(v);
+        if (Number.isFinite(n)) cleanStats[k] = n;
+      }
+    }
+
     const player = {
       ...parsed,
       heatmap,
+      stats: cleanStats,
+      stats_source: parsed.stats_source || "",
+      stats_season: parsed.stats_season || "",
     };
     delete player.heatmap_zones;
 
