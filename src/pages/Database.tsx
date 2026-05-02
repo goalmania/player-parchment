@@ -47,7 +47,7 @@ export default function Database() {
       if (sl && !sl.has(p.id)) return false;
       if (search) {
         const s = search.toLowerCase();
-        if (![p.name, p.club, p.position_main].some((v) => v.toLowerCase().includes(s))) return false;
+        if (![p.name, p.club, p.position_main, p.league].some((v) => (v || "").toLowerCase().includes(s))) return false;
       }
       if (pos !== "all" && p.position_code !== pos) return false;
       if (foot !== "all" && p.foot !== foot) return false;
@@ -60,6 +60,7 @@ export default function Database() {
       if (tag !== "all" && !p.tags.includes(tag)) return false;
       if (verdict !== "all" && p.verdict_type !== verdict) return false;
       if (tactical !== "all" && !p.tactical_roles.some((r) => r.role === tactical)) return false;
+      if (league !== "all" && p.league !== league) return false;
       return true;
     });
 
