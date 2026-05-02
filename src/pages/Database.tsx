@@ -102,10 +102,10 @@ export default function Database() {
         style={{ top: "var(--nav-height)", background: "hsl(0 0% 4% / 0.92)" }}
       >
         <div className="container py-3">
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-2">
             <input
               className="dm-input col-span-2 lg:col-span-2"
-              placeholder="Cerca nome, club, ruolo…"
+              placeholder="Cerca nome, club, ruolo, campionato…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
