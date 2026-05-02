@@ -6,9 +6,10 @@ import PlayerCard, { TagPill, VerdictBadge } from "@/components/PlayerCard";
 import { ALL_TAGS, POSITION_LABEL, POSITION_CODES } from "@/lib/types";
 import { exportJSON, importJSON } from "@/lib/storage";
 import { getShortlist, subscribeShortlist } from "@/lib/shortlist";
+import { getAllFieldMappings } from "@/lib/csvExport";
 import { toast } from "sonner";
 
-type ViewMode = "grid" | "list";
+type ViewMode = "grid" | "list" | "mapping";
 type AgeBucket = "all" | "U18" | "U20" | "U23" | "Senior";
 
 export default function Database() {
