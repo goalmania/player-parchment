@@ -2,7 +2,7 @@ import type { Player, PlayerStats } from "./types";
 import { STATS_GROUPS, STATS_MATCH_GROUPS } from "./types";
 
 /** Versione del formato di export — cambiala se modifichi la struttura del CSV. */
-export const CSV_EXPORT_VERSION = "2.1";
+export const CSV_EXPORT_VERSION = "2.2";
 
 /** Escape a CSV cell per RFC 4180 (quotes, commas, newlines). */
 function csvCell(v: unknown): string {
