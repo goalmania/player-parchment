@@ -311,11 +311,11 @@ function instatMappingRows(usedKeys: Set<string>): (string | number | null | und
     const map = instatForKey(key);
     rows.push([
       key,
-      map?.instat || "",
-      map?.wyscout || "",
-      map?.fbref || "",
-      map?.also || "",
-      f.unit || "",
+      emptyIfMissing(map?.instat),
+      emptyIfMissing(map?.wyscout),
+      emptyIfMissing(map?.fbref),
+      emptyIfMissing(map?.also),
+      emptyIfMissing(f.unit),
       f.mode,
     ]);
   }
