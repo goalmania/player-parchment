@@ -140,6 +140,10 @@ export default function Database() {
               <option value="all">Ruolo Tattico</option>
               {tacticalRoleOptions.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
+            <select className="dm-input" value={league} onChange={(e) => setLeague(e.target.value)}>
+              <option value="all">Campionato</option>
+              {leagueOptions.map((l) => <option key={l} value={l}>{l}</option>)}
+            </select>
             <select className="dm-input" value={sort} onChange={(e) => setSort(e.target.value)}>
               <option value="overall_desc">Overall ↓</option>
               <option value="overall_asc">Overall ↑</option>
