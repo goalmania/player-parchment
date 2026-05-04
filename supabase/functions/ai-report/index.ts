@@ -247,9 +247,11 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not set");
 
+    const matchHints = /last\s+match|ultima\s+partita|match\s+stats|per\s+match\b|match\s*report|game\s+stats|vs\.?\s+[A-Z]|\bmatch:\s|\bgame:\s/i.test(text || "");
     const userMsg = `NOME GIOCATORE (suggerimento): ${name || "non specificato"}
 CLUB (suggerimento): ${club || "non specificato"}
 DATA OSSERVAZIONE: ${new Date().toISOString().slice(0, 10)}
+INDIZIO: ${matchHints ? "il documento sembra contenere statistiche di una SINGOLA PARTITA — usa il prefisso m_ per quei numeri." : "il documento sembra contenere statistiche STAGIONALI — usa chiavi senza prefisso."}
 
 OSSERVAZIONI DELLO SCOUT (testo libero):
 """
