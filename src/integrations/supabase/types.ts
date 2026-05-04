@@ -268,6 +268,25 @@ export type Database = {
         Args: { _player_id: string; _user_id: string }
         Returns: boolean
       }
+      list_public_players: {
+        Args: never
+        Returns: {
+          age: number
+          birth_year: number
+          club: string
+          created_at: string
+          flag: string
+          id: string
+          league: string
+          name: string
+          nationality: string
+          owner_id: string
+          photo: string
+          position_code: string
+          position_main: string
+          region: string
+        }[]
+      }
     }
     Enums: {
       access_request_status: "pending" | "accepted" | "rejected"
