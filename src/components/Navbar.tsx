@@ -7,11 +7,12 @@ import GlobalSearch from "./GlobalSearch";
 const links = [
   { to: "/", label: "Dashboard", end: true },
   { to: "/database", label: "Database" },
+  { to: "/marketplace", label: "Marketplace" },
   { to: "/map", label: "Mappa" },
   { to: "/compare", label: "Confronto" },
   { to: "/squad-builder", label: "Squad" },
   { to: "/match-planner", label: "Match" },
-  { to: "/browse", label: "Esplora" },
+  { to: "/requests", label: "Richieste" },
   { to: "/account", label: "Account" },
 ];
 
