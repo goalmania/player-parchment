@@ -22,10 +22,14 @@ export default function AddReport() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex-1">
               <div className="font-display font-bold text-lg uppercase mb-1">⚡ Compila automaticamente</div>
-              <p className="text-sm text-gray-soft">Carica un report (PDF / DOCX / TXT) <strong className="text-foreground">oppure</strong> incolla il testo: l'AI compila tutti i campi (ruoli tattici, valutazioni, tag, verdetto…).</p>
+              <p className="text-sm text-gray-soft">
+                Carica un report (PDF / DOCX / TXT) e l'AI <strong className="text-foreground">crea e salva</strong> immediatamente il giocatore nel database.
+                <br />Vuoi solo precompilare e rivedere prima del salvataggio? Usa "Carica in bozza".
+              </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <UploadReportButton />
+              <UploadReportButton autoSave label="📄 Carica e salva (PDF/DOCX/TXT)" />
+              <UploadReportButton autoSave={false} label="✏️ Carica in bozza" />
               <Link to="/ai-report" className="dm-btn-primary whitespace-nowrap">Incolla testo →</Link>
             </div>
           </div>
