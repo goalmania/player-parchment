@@ -253,6 +253,9 @@ export default function Marketplace() {
               {f === "all" ? "Tutti" : f === "agency" ? "Agenzie" : "Club"}
             </button>
           ))}
+          <button onClick={resetFilters} className="px-3 py-1.5 font-mono uppercase tracking-[0.12rem] border-hairline text-gray-soft hover:text-foreground">
+            ✕ Reset
+          </button>
           <span className="ml-auto text-gray-soft self-center">{filtered.length} giocatori</span>
         </div>
 
