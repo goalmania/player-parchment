@@ -322,16 +322,16 @@ Compila ORA il report completo chiamando extract_player_report. Non scrivere alt
       }
     }
 
-    // Safety net: if il documento è chiaramente di una singola partita e l'AI
-    // ha popolato solo chiavi senza prefisso, mirroriamole su m_ così che
-    // l'auto-compilazione dell'ultima partita funzioni sempre.
+    // Safety net: se il documento è chiaramente di una singola partita ma
+    // l'AI ha popolato solo chiavi senza prefisso, le rimappiamo a m_ così che
+    // le statistiche dell'ultima partita finiscano sempre nel posto giusto.
     const hasMKeys = Object.keys(cleanStats).some((k) => k.startsWith("m_"));
     if (matchHints && !hasMKeys && Object.keys(cleanStats).length > 0) {
-      const mirrored: Record<string, number> = {};
+      const remapped: Record<string, number> = {};
       for (const [k, v] of Object.entries(cleanStats)) {
-        mirrored[`m_${k}`] = v;
+        remapped[`m_${k}`] = v;
       }
-      cleanStats = { ...cleanStats, ...mirrored };
+      cleanStats = remapped;
     }
 
     const player = {
