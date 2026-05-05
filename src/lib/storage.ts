@@ -126,6 +126,24 @@ function playerToRow(p: Player, ownerId: string) {
 /** Ensure each player has the optional fields populated with defaults. */
 function hydrate(p: Player): Player {
   let next = p;
+  // Resolve geo from club/nationality when lat/lng or region are missing
+  const needsGeo = !next.lat || !next.lng || Math.abs(next.lat) < 0.001 || Math.abs(next.lng) < 0.001 || !next.region;
+  if (needsGeo) {
+    const geo = resolveGeo({
+      club: next.club,
+      league: next.league,
+      nationality: next.nationality,
+      seed: next.id || next.name,
+    });
+    if (geo) {
+      next = {
+        ...next,
+        lat: (!next.lat || Math.abs(next.lat) < 0.001) ? geo.lat : next.lat,
+        lng: (!next.lng || Math.abs(next.lng) < 0.001) ? geo.lng : next.lng,
+        region: next.region || geo.region || "",
+      };
+    }
+  }
   if (!next.heatmap || next.heatmap.length === 0) {
     next = { ...next, heatmap: heatmapFromPosition(next.position_code) };
   }
