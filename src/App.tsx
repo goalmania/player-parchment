@@ -22,6 +22,7 @@ import Account from "./pages/Account";
 import Requests from "./pages/Requests";
 import Browse from "./pages/Browse";
 import Marketplace from "./pages/Marketplace";
+import Unlocked from "./pages/Unlocked";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
