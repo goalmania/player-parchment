@@ -9,6 +9,29 @@ import PageShell from "@/components/PageShell";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { POSITION_CODES, POSITION_LABEL } from "@/lib/types";
+
+// Campionati italiani + esteri sempre presenti nel filtro, anche
+// se nessun report in DB li ha ancora popolati.
+const DEFAULT_LEAGUES = [
+  "Serie A", "Serie B", "Serie C", "Serie D",
+  "Eccellenza", "Promozione", "Prima Categoria", "Seconda Categoria",
+  "Primavera 1", "Primavera 2", "Under 19", "Under 17", "Under 15",
+  "Premier League", "Championship", "League One", "League Two",
+  "La Liga", "Segunda División", "Bundesliga", "2. Bundesliga",
+  "Ligue 1", "Ligue 2", "Eredivisie", "Primeira Liga",
+  "MLS", "Belgian Pro League", "Süper Lig", "Ekstraklasa",
+  "Super League Greece", "Allsvenskan", "Eliteserien",
+];
+
+const AGE_BUCKETS: { value: string; label: string; min: number; max: number }[] = [
+  { value: "u17", label: "U17 (≤16)", min: 0, max: 16 },
+  { value: "u19", label: "U19 (17-18)", min: 17, max: 18 },
+  { value: "u21", label: "U21 (19-20)", min: 19, max: 20 },
+  { value: "u23", label: "U23 (21-22)", min: 21, max: 22 },
+  { value: "senior", label: "Senior (23-29)", min: 23, max: 29 },
+  { value: "veteran", label: "Veterani (30+)", min: 30, max: 99 },
+];
 
 interface PublicPlayer {
   id: string;
