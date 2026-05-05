@@ -314,12 +314,24 @@ Compila ORA il report completo chiamando extract_player_report. Non scrivere alt
     const heatmap = zonesToHeatmap(parsed.heatmap_zones || []);
 
     // Sanitize stats: only finite numbers, drop everything else.
-    const cleanStats: Record<string, number> = {};
+    let cleanStats: Record<string, number> = {};
     if (parsed.stats && typeof parsed.stats === "object") {
       for (const [k, v] of Object.entries(parsed.stats)) {
         const n = typeof v === "number" ? v : Number(v);
         if (Number.isFinite(n)) cleanStats[k] = n;
       }
+    }
+
+    // Safety net: if il documento è chiaramente di una singola partita e l'AI
+    // ha popolato solo chiavi senza prefisso, mirroriamole su m_ così che
+    // l'auto-compilazione dell'ultima partita funzioni sempre.
+    const hasMKeys = Object.keys(cleanStats).some((k) => k.startsWith("m_"));
+    if (matchHints && !hasMKeys && Object.keys(cleanStats).length > 0) {
+      const mirrored: Record<string, number> = {};
+      for (const [k, v] of Object.entries(cleanStats)) {
+        mirrored[`m_${k}`] = v;
+      }
+      cleanStats = { ...cleanStats, ...mirrored };
     }
 
     const player = {
