@@ -70,6 +70,9 @@ export default function Marketplace() {
   const [leagueFilter, setLeagueFilter] = useState<string>("all");
   const [orgFilter, setOrgFilter] = useState<"all" | "agency" | "club">("all");
   const [accessFilter, setAccessFilter] = useState<"all" | "available" | "mine" | "requested" | "accepted">("all");
+  const [ageFilter, setAgeFilter] = useState<string>("all");
+  const [natFilter, setNatFilter] = useState<string>("all");
+  const [clubFilter, setClubFilter] = useState<string>("all");
 
   const load = async () => {
     if (!user) return;
