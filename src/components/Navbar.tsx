@@ -8,6 +8,7 @@ const links = [
   { to: "/", label: "Dashboard", end: true },
   { to: "/database", label: "Database" },
   { to: "/marketplace", label: "Marketplace" },
+  { to: "/unlocked", label: "Sbloccati" },
   { to: "/map", label: "Mappa" },
   { to: "/compare", label: "Confronto" },
   { to: "/squad-builder", label: "Squad" },
