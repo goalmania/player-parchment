@@ -118,25 +118,47 @@ export default function Marketplace() {
     setRequested((s) => new Set([...s, player.id]));
   };
 
+  // Lista completa dei ruoli (tutti quelli supportati dalla piattaforma),
+  // unita ai codici effettivamente presenti nei report.
   const positions = useMemo(() => {
-    const set = new Set<string>();
+    const set = new Set<string>(POSITION_CODES as unknown as string[]);
     players.forEach((p) => p.position_code && set.add(p.position_code));
     return Array.from(set).sort();
   }, [players]);
 
+  // Tutti i campionati di default + quelli effettivamente presenti.
   const leagues = useMemo(() => {
-    const set = new Set<string>();
+    const set = new Set<string>(DEFAULT_LEAGUES);
     players.forEach((p) => p.league && set.add(p.league));
+    return Array.from(set).sort();
+  }, [players]);
+
+  const nationalities = useMemo(() => {
+    const set = new Set<string>();
+    players.forEach((p) => p.nationality && set.add(p.nationality));
+    return Array.from(set).sort();
+  }, [players]);
+
+  const clubs = useMemo(() => {
+    const set = new Set<string>();
+    players.forEach((p) => p.club && set.add(p.club));
     return Array.from(set).sort();
   }, [players]);
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
+    const ageBucket = AGE_BUCKETS.find((b) => b.value === ageFilter);
     return players.filter((p) => {
       const owner = owners[p.owner_id];
       if (orgFilter !== "all" && owner?.org_type !== orgFilter) return false;
       if (posFilter !== "all" && p.position_code !== posFilter) return false;
       if (leagueFilter !== "all" && p.league !== leagueFilter) return false;
+      if (natFilter !== "all" && p.nationality !== natFilter) return false;
+      if (clubFilter !== "all" && p.club !== clubFilter) return false;
+      if (ageBucket) {
+        const a = p.age ?? -1;
+        if (a < ageBucket.min || a > ageBucket.max) return false;
+      }
       if (accessFilter === "mine" && p.owner_id !== user?.id) return false;
       if (accessFilter === "available" && (p.owner_id === user?.id || accessible.has(p.id))) return false;
       if (accessFilter === "requested" && !requested.has(p.id)) return false;
@@ -150,7 +172,12 @@ export default function Marketplace() {
       }
       return true;
     });
-  }, [players, owners, search, orgFilter, posFilter, leagueFilter, accessFilter, accessible, requested, user]);
+  }, [players, owners, search, orgFilter, posFilter, leagueFilter, natFilter, clubFilter, ageFilter, accessFilter, accessible, requested, user]);
+
+  const resetFilters = () => {
+    setSearch(""); setPosFilter("all"); setLeagueFilter("all"); setOrgFilter("all");
+    setAccessFilter("all"); setAgeFilter("all"); setNatFilter("all"); setClubFilter("all");
+  };
 
   if (loading) return <PageShell><div className="container py-20 text-center text-gray-soft">Caricamento…</div></PageShell>;
   if (!user) return <Navigate to="/auth" replace />;
@@ -167,10 +194,13 @@ export default function Marketplace() {
               richiedi l'accesso al proprietario per sbloccare statistiche, valutazioni e verdetto.
             </p>
           </div>
-          <Link to="/requests" className="dm-btn-outline whitespace-nowrap">📨 Le mie richieste →</Link>
+          <div className="flex gap-2 whitespace-nowrap">
+            <Link to="/unlocked" className="dm-btn-outline">🔓 Sbloccati</Link>
+            <Link to="/requests" className="dm-btn-outline">📨 Richieste →</Link>
+          </div>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-2 mb-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-2">
           <input
             className="dm-input lg:col-span-2"
             placeholder="Cerca per nome, club, lega, ruolo…"
@@ -179,21 +209,39 @@ export default function Marketplace() {
           />
           <select className="dm-input" value={posFilter} onChange={(e) => setPosFilter(e.target.value)}>
             <option value="all">Tutti i ruoli</option>
-            {positions.map((p) => <option key={p} value={p}>{p}</option>)}
+            {positions.map((p) => (
+              <option key={p} value={p}>
+                {p}{POSITION_LABEL[p as keyof typeof POSITION_LABEL] ? ` — ${POSITION_LABEL[p as keyof typeof POSITION_LABEL]}` : ""}
+              </option>
+            ))}
           </select>
           <select className="dm-input" value={leagueFilter} onChange={(e) => setLeagueFilter(e.target.value)}>
             <option value="all">Tutti i campionati</option>
             {leagues.map((l) => <option key={l} value={l}>{l}</option>)}
           </select>
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-6">
+          <select className="dm-input" value={ageFilter} onChange={(e) => setAgeFilter(e.target.value)}>
+            <option value="all">Tutte le età</option>
+            {AGE_BUCKETS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+          </select>
+          <select className="dm-input" value={natFilter} onChange={(e) => setNatFilter(e.target.value)}>
+            <option value="all">Tutte le nazionalità</option>
+            {nationalities.map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <select className="dm-input" value={clubFilter} onChange={(e) => setClubFilter(e.target.value)}>
+            <option value="all">Tutti i club</option>
+            {clubs.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
           <select className="dm-input" value={accessFilter} onChange={(e) => setAccessFilter(e.target.value as any)}>
-            <option value="all">Tutti</option>
+            <option value="all">Stato: tutti</option>
             <option value="available">Da richiedere</option>
             <option value="requested">Richiesti</option>
             <option value="accepted">Accessibili</option>
             <option value="mine">I miei</option>
           </select>
         </div>
-        <div className="flex gap-2 mb-6 text-xs">
+        <div className="flex gap-2 mb-6 text-xs flex-wrap items-center">
           {(["all", "agency", "club"] as const).map((f) => (
             <button
               key={f}
