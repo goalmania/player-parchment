@@ -6,6 +6,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Player, Observation } from "./types";
 import { heatmapFromPosition } from "@/components/HeatmapEditor";
+import { resolveGeo } from "./geo";
 
 const COMPARE_KEY = "dmscout_compare_id";
 const AI_DRAFT_KEY = "dmscout_ai_draft";
