@@ -60,6 +60,7 @@ const App = () => (
           <Route path="/requests" element={<Protected><Requests /></Protected>} />
           <Route path="/browse" element={<Protected><Browse /></Protected>} />
           <Route path="/marketplace" element={<Protected><Marketplace /></Protected>} />
+          <Route path="/unlocked" element={<Protected><Unlocked /></Protected>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
