@@ -52,25 +52,41 @@ export default function MapPage() {
   const [filterRegion, setFilterRegion] = useState<string>("all");
   const [filterPosition, setFilterPosition] = useState<string>("all");
   const [filterClub, setFilterClub] = useState<string>("all");
+  const [filterNationality, setFilterNationality] = useState<string>("all");
+
+  // Pre-compute normalized fields per player (memoized)
+  const enriched = useMemo(
+    () => players.map((p) => ({
+      p,
+      clubKey: normalizeClubName(p.club),
+      natKey: normalizeNationality(p.nationality),
+    })),
+    [players]
+  );
 
   const regionOptions = useMemo(
     () => Array.from(new Set(players.map((p) => p.region).filter(Boolean))).sort(),
     [players]
   );
   const clubOptions = useMemo(
-    () => Array.from(new Set(players.map((p) => p.club).filter(Boolean))).sort(),
-    [players]
+    () => Array.from(new Set(enriched.map((e) => e.clubKey).filter(Boolean))).sort(),
+    [enriched]
+  );
+  const nationalityOptions = useMemo(
+    () => Array.from(new Set(enriched.map((e) => e.natKey).filter(Boolean))).sort(),
+    [enriched]
   );
 
   const filtered = useMemo(
-    () => players.filter((p) =>
+    () => enriched.filter(({ p, clubKey, natKey }) =>
       Number.isFinite(p.lat) && Number.isFinite(p.lng) &&
       (filterVerdict === "all" || p.verdict_type === filterVerdict) &&
       (filterRegion === "all" || p.region === filterRegion) &&
       (filterPosition === "all" || p.position_code === filterPosition) &&
-      (filterClub === "all" || p.club === filterClub)
-    ),
-    [players, filterVerdict, filterRegion, filterPosition, filterClub]
+      (filterClub === "all" || clubKey === filterClub) &&
+      (filterNationality === "all" || natKey === filterNationality)
+    ).map((e) => e.p),
+    [enriched, filterVerdict, filterRegion, filterPosition, filterClub, filterNationality]
   );
 
   const stats = useMemo(() => {
