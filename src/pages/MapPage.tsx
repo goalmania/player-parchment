@@ -216,6 +216,13 @@ export default function MapPage() {
                 {clubOptions.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </label>
+            <label className="block">
+              <span className="text-[0.6rem] font-mono uppercase tracking-[0.12rem] text-gray-soft mb-1 block">Nazionalità</span>
+              <select className="dm-input" value={filterNationality} onChange={(e) => setFilterNationality(e.target.value)}>
+                <option value="all">Tutte</option>
+                {nationalityOptions.map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </label>
           </div>
         </div>
 
