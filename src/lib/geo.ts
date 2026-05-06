@@ -271,10 +271,14 @@ function lookupClub(club: string): GeoInfo | null {
   if (FOREIGN_CLUBS[k]) return FOREIGN_CLUBS[k];
   // partial contains match (e.g. "Inter Milano U19")
   for (const [name, info] of Object.entries(ITALIAN_CLUBS)) {
-    if (k.includes(name) || name.includes(k)) return info;
+    if (name.length >= 4 && (k.includes(name) || name.includes(k))) return info;
   }
   for (const [name, info] of Object.entries(FOREIGN_CLUBS)) {
-    if (k.includes(name) || name.includes(k)) return info;
+    if (name.length >= 4 && (k.includes(name) || name.includes(k))) return info;
+  }
+  // Try matching an Italian city embedded in club name
+  for (const [name, info] of Object.entries(ITALIAN_CITIES)) {
+    if (k.includes(name)) return info;
   }
   return null;
 }
@@ -285,9 +289,16 @@ function lookupCountry(nationality: string): GeoInfo | null {
   return COUNTRIES[k] || null;
 }
 
+function isItalian(nationality?: string): boolean {
+  if (!nationality) return false;
+  const k = norm(nationality);
+  return k === "italia" || k === "italy" || k === "italiana" || k === "italiano" || k === "ita";
+}
+
 /**
- * Resolve geographic info for a player using club first, then nationality.
- * Adds slight jitter so multiple players in the same city don't overlap.
+ * Resolve geographic info for a player.
+ * Rule: smistamento prima per NAZIONALITÀ. Se la nazionalità è italiana,
+ * smistiamo per REGIONE usando il club (o città) di militanza.
  */
 export function resolveGeo(opts: {
   club?: string;
@@ -295,8 +306,19 @@ export function resolveGeo(opts: {
   nationality?: string;
   seed?: string;
 }): GeoInfo | null {
-  const fromClub = lookupClub(opts.club || "");
-  const base = fromClub || lookupCountry(opts.nationality || "");
+  let base: GeoInfo | null = null;
+
+  if (isItalian(opts.nationality)) {
+    // Italiani → smistati per regione tramite club
+    base = lookupClub(opts.club || "") || lookupCountry(opts.nationality || "");
+  } else if (opts.nationality) {
+    // Stranieri → smistati per nazionalità
+    base = lookupCountry(opts.nationality) || lookupClub(opts.club || "");
+  } else {
+    // Senza nazionalità → fallback al club
+    base = lookupClub(opts.club || "");
+  }
+
   if (!base) return null;
   // Deterministic small jitter (~5-15km) based on seed string
   const seed = opts.seed || `${opts.club || ""}-${opts.nationality || ""}`;
@@ -310,3 +332,4 @@ export function resolveGeo(opts: {
     region: base.region,
   };
 }
+
