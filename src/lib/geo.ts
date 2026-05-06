@@ -259,10 +259,101 @@ const COUNTRIES: Record<string, GeoInfo> = {
 const norm = (s: string) =>
   s.toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/\b(fc|cf|ac|as|us|sc|cd|ud|rc|ssc|calcio|club|football)\b/g, "")
+    .replace(/\b(fc|cf|ac|as|us|sc|cd|ud|rc|ssc|ssd|asd|aps|spa|srl|calcio|club|football|football club|fussball|fussballclub|cfc|afc)\b/g, "")
     .replace(/[^a-z0-9 ]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+
+/**
+ * Normalize a club name for grouping/matching across variants like:
+ *  "A.C. Milan", "AC Milan U19", "Milan Primavera", "Milan B" → "Milan"
+ *  "Internazionale Milano" / "F.C. Inter" → "Inter"
+ *  "Hellas Verona FC" → "Hellas Verona"
+ * Returns a Title Case canonical label.
+ */
+const SUFFIX_RE = /\b(u15|u16|u17|u18|u19|u20|u21|u23|primavera|youth|giovanili|giovanissimi|allievi|berretti|reserves?|riserve|ii|b|2|women|femminile|femminil|fem|w)\b/g;
+const ALIASES: Record<string, string> = {
+  "internazionale": "Inter",
+  "internazionale milano": "Inter",
+  "fc internazionale": "Inter",
+  "ac milan": "Milan",
+  "as roma": "Roma",
+  "ssc napoli": "Napoli",
+  "ss lazio": "Lazio",
+  "hellas verona": "Hellas Verona",
+  "verona": "Hellas Verona",
+  "juventus fc": "Juventus",
+  "torino fc": "Torino",
+  "udinese calcio": "Udinese",
+  "bologna fc": "Bologna",
+  "genoa cfc": "Genoa",
+  "sampdoria": "Sampdoria",
+  "uc sampdoria": "Sampdoria",
+  "parma calcio": "Parma",
+  "spezia calcio": "Spezia",
+  "us cremonese": "Cremonese",
+  "us salernitana": "Salernitana",
+  "us sassuolo": "Sassuolo",
+  "ssd sudtirol": "Südtirol",
+  "sudtirol": "Südtirol",
+  "südtirol": "Südtirol",
+  "feralpisalo": "FeralpiSalò",
+  "feralpisalò": "FeralpiSalò",
+  "manchester utd": "Manchester United",
+  "man utd": "Manchester United",
+  "man city": "Manchester City",
+  "psg": "Paris Saint-Germain",
+  "paris sg": "Paris Saint-Germain",
+  "paris saint germain": "Paris Saint-Germain",
+  "bayern munich": "Bayern München",
+  "bayern munchen": "Bayern München",
+  "atletico madrid": "Atlético Madrid",
+  "atletico de madrid": "Atlético Madrid",
+};
+
+const titleCase = (s: string) =>
+  s.split(" ").filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
+
+export function normalizeClubName(raw?: string | null): string {
+  if (!raw) return "";
+  let k = norm(raw).replace(SUFFIX_RE, " ").replace(/\s+/g, " ").trim();
+  if (!k) return "";
+  if (ALIASES[k]) return ALIASES[k];
+  // alias key may be a prefix of k after suffix strip
+  for (const [alias, canon] of Object.entries(ALIASES)) {
+    if (k === alias || k.startsWith(alias + " ") || k.endsWith(" " + alias)) return canon;
+  }
+  // Match against known club dictionaries to recover canonical form
+  for (const name of Object.keys(ITALIAN_CLUBS)) {
+    if (k === name || k.startsWith(name + " ") || k.endsWith(" " + name) || k.includes(" " + name + " ")) {
+      return titleCase(name);
+    }
+  }
+  for (const name of Object.keys(FOREIGN_CLUBS)) {
+    if (k === name || k.startsWith(name + " ") || k.endsWith(" " + name) || k.includes(" " + name + " ")) {
+      return titleCase(name);
+    }
+  }
+  return titleCase(k);
+}
+
+export function normalizeNationality(raw?: string | null): string {
+  if (!raw) return "";
+  const k = norm(raw);
+  const map: Record<string, string> = {
+    italia: "Italia", italy: "Italia", italiana: "Italia", italiano: "Italia", ita: "Italia",
+    spain: "Spagna", spagna: "Spagna", esp: "Spagna",
+    france: "Francia", francia: "Francia", fra: "Francia",
+    germany: "Germania", germania: "Germania", ger: "Germania", deu: "Germania",
+    england: "Inghilterra", inghilterra: "Inghilterra", eng: "Inghilterra",
+    portugal: "Portogallo", portogallo: "Portogallo", por: "Portogallo",
+    netherlands: "Paesi Bassi", "paesi bassi": "Paesi Bassi", olanda: "Paesi Bassi", ned: "Paesi Bassi",
+    belgium: "Belgio", belgio: "Belgio", bel: "Belgio",
+    brazil: "Brasile", brasile: "Brasile", bra: "Brasile",
+    argentina: "Argentina", arg: "Argentina",
+  };
+  return map[k] || titleCase(k);
+}
 
 function lookupClub(club: string): GeoInfo | null {
   if (!club) return null;

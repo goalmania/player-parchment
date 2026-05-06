@@ -199,13 +199,12 @@ let realtimeStarting = false;
 export function startRealtime() {
   if (realtimeChannel || realtimeStarting) return;
   realtimeStarting = true;
-  const ch = supabase
-    .channel("players-changes")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "players" },
-      () => { loadPlayers(); }
-    );
+  const ch = supabase.channel("players-changes");
+  ch.on(
+    "postgres_changes" as any,
+    { event: "*", schema: "public", table: "players" },
+    () => { loadPlayers(); }
+  );
   realtimeChannel = ch;
   ch.subscribe(() => { realtimeStarting = false; });
 }

@@ -5,6 +5,7 @@ import { usePlayers } from "@/lib/usePlayers";
 import { TagPill, VerdictBadge } from "@/components/PlayerCard";
 import type { Player } from "@/lib/types";
 import { POSITION_CODES, POSITION_LABEL } from "@/lib/types";
+import { normalizeClubName, normalizeNationality } from "@/lib/geo";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster";
@@ -51,25 +52,41 @@ export default function MapPage() {
   const [filterRegion, setFilterRegion] = useState<string>("all");
   const [filterPosition, setFilterPosition] = useState<string>("all");
   const [filterClub, setFilterClub] = useState<string>("all");
+  const [filterNationality, setFilterNationality] = useState<string>("all");
+
+  // Pre-compute normalized fields per player (memoized)
+  const enriched = useMemo(
+    () => players.map((p) => ({
+      p,
+      clubKey: normalizeClubName(p.club),
+      natKey: normalizeNationality(p.nationality),
+    })),
+    [players]
+  );
 
   const regionOptions = useMemo(
     () => Array.from(new Set(players.map((p) => p.region).filter(Boolean))).sort(),
     [players]
   );
   const clubOptions = useMemo(
-    () => Array.from(new Set(players.map((p) => p.club).filter(Boolean))).sort(),
-    [players]
+    () => Array.from(new Set(enriched.map((e) => e.clubKey).filter(Boolean))).sort(),
+    [enriched]
+  );
+  const nationalityOptions = useMemo(
+    () => Array.from(new Set(enriched.map((e) => e.natKey).filter(Boolean))).sort(),
+    [enriched]
   );
 
   const filtered = useMemo(
-    () => players.filter((p) =>
+    () => enriched.filter(({ p, clubKey, natKey }) =>
       Number.isFinite(p.lat) && Number.isFinite(p.lng) &&
       (filterVerdict === "all" || p.verdict_type === filterVerdict) &&
       (filterRegion === "all" || p.region === filterRegion) &&
       (filterPosition === "all" || p.position_code === filterPosition) &&
-      (filterClub === "all" || p.club === filterClub)
-    ),
-    [players, filterVerdict, filterRegion, filterPosition, filterClub]
+      (filterClub === "all" || clubKey === filterClub) &&
+      (filterNationality === "all" || natKey === filterNationality)
+    ).map((e) => e.p),
+    [enriched, filterVerdict, filterRegion, filterPosition, filterClub, filterNationality]
   );
 
   const stats = useMemo(() => {
@@ -79,7 +96,8 @@ export default function MapPage() {
   }, [filtered]);
 
   const resetFilters = () => {
-    setFilterVerdict("all"); setFilterRegion("all"); setFilterPosition("all"); setFilterClub("all");
+    setFilterVerdict("all"); setFilterRegion("all"); setFilterPosition("all");
+    setFilterClub("all"); setFilterNationality("all");
   };
 
   const mapDivRef = useRef<HTMLDivElement>(null);
@@ -167,7 +185,7 @@ export default function MapPage() {
             <button onClick={resetFilters} className="dm-btn-outline !py-1.5 !px-3 text-xs">↺ Reset filtri</button>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
             <label className="block">
               <span className="text-[0.6rem] font-mono uppercase tracking-[0.12rem] text-gray-soft mb-1 block">Verdetto</span>
               <select className="dm-input" value={filterVerdict} onChange={(e) => setFilterVerdict(e.target.value)}>
@@ -196,6 +214,13 @@ export default function MapPage() {
               <select className="dm-input" value={filterClub} onChange={(e) => setFilterClub(e.target.value)}>
                 <option value="all">Tutti i club</option>
                 {clubOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-[0.6rem] font-mono uppercase tracking-[0.12rem] text-gray-soft mb-1 block">Nazionalità</span>
+              <select className="dm-input" value={filterNationality} onChange={(e) => setFilterNationality(e.target.value)}>
+                <option value="all">Tutte</option>
+                {nationalityOptions.map((n) => <option key={n} value={n}>{n}</option>)}
               </select>
             </label>
           </div>
