@@ -70,7 +70,6 @@ const ITALIAN_CLUBS: Record<string, GeoInfo> = {
   "altamura": { lat: 40.8266, lng: 16.5520, region: "Puglia" },
   "brindisi": { lat: 40.6320, lng: 17.9418, region: "Puglia" },
   "crotone": { lat: 39.0808, lng: 17.1272, region: "Calabria" },
-  "catanzaro": { lat: 38.9059, lng: 16.5963, region: "Calabria" },
   "vibonese": { lat: 38.6759, lng: 16.1011, region: "Calabria" },
   "messina": { lat: 38.1938, lng: 15.5540, region: "Sicilia" },
   "acr messina": { lat: 38.1938, lng: 15.5540, region: "Sicilia" },
