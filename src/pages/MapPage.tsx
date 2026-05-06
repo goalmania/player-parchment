@@ -96,7 +96,8 @@ export default function MapPage() {
   }, [filtered]);
 
   const resetFilters = () => {
-    setFilterVerdict("all"); setFilterRegion("all"); setFilterPosition("all"); setFilterClub("all");
+    setFilterVerdict("all"); setFilterRegion("all"); setFilterPosition("all");
+    setFilterClub("all"); setFilterNationality("all");
   };
 
   const mapDivRef = useRef<HTMLDivElement>(null);
