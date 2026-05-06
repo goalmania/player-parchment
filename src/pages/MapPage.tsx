@@ -185,7 +185,7 @@ export default function MapPage() {
             <button onClick={resetFilters} className="dm-btn-outline !py-1.5 !px-3 text-xs">↺ Reset filtri</button>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
             <label className="block">
               <span className="text-[0.6rem] font-mono uppercase tracking-[0.12rem] text-gray-soft mb-1 block">Verdetto</span>
               <select className="dm-input" value={filterVerdict} onChange={(e) => setFilterVerdict(e.target.value)}>
