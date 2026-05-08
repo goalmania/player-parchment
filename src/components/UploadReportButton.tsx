@@ -60,6 +60,13 @@ export default function UploadReportButton({ autoSave = true, label }: Props) {
 
       // AUTO-SAVE — costruisci un Player completo con default sicuri sui campi mancanti
       const code = (ai.position_code as PositionCode) || "CM";
+      // Normalizza height (es. 1.88 m -> 188 cm) e weight in interi
+      const rawH = Number(ai.height);
+      const heightCm = Number.isFinite(rawH)
+        ? Math.round(rawH < 3 ? rawH * 100 : rawH)
+        : 180;
+      const rawW = Number(ai.weight);
+      const weightKg = Number.isFinite(rawW) ? Math.round(rawW) : 75;
       const full: Player = {
         id: "",
         num: ai.num || nextNum(),
@@ -78,8 +85,8 @@ export default function UploadReportButton({ autoSave = true, label }: Props) {
         position_code: code,
         position_secondary: ai.position_secondary || [],
         foot: ai.foot || "Destro",
-        height: ai.height ?? 180,
-        weight: ai.weight ?? 75,
+        height: heightCm,
+        weight: weightKg,
         tactical_roles: ai.tactical_roles || [],
         ratings: ai.ratings || { technical: 6, tactical: 6, physical: 6, mental: 6, overall: 6 },
         skills: ai.skills || { ball_control: 60, passing: 60, dribbling: 60, finishing: 60, defensive_work: 60, tactical_iq: 60, decision_making: 60, aerial: 60, pace: 60, stamina: 60 },
