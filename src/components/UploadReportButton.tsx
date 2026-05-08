@@ -7,6 +7,101 @@ import type { Player, PositionCode } from "@/lib/types";
 import { POSITION_LABEL } from "@/lib/types";
 import { toast } from "sonner";
 
+/** Estrae un numero da stringhe tipo "1,88 m", "75 kg", "€ 2.500.000", "85%". */
+function toNum(v: any, def = 0): number {
+  if (v == null || v === "") return def;
+  if (typeof v === "number") return Number.isFinite(v) ? v : def;
+  let s = String(v).trim().toLowerCase()
+    .replace(/[€$£¥]/g, "")
+    .replace(/\b(kg|cm|mt|m|kgs|kgp|%|min|gol|goals?|assists?|anni|years?)\b/g, "")
+    .replace(/[^\d,.\-]/g, "")
+    .trim();
+  if (!s) return def;
+  // gestisci separatori: "2.500.000,50" oppure "2,500,000.50" oppure "1,88"
+  const lastComma = s.lastIndexOf(",");
+  const lastDot = s.lastIndexOf(".");
+  if (lastComma > -1 && lastDot > -1) {
+    if (lastComma > lastDot) { s = s.replace(/\./g, "").replace(",", "."); }
+    else { s = s.replace(/,/g, ""); }
+  } else if (lastComma > -1) {
+    // solo virgola: se ce n'è una sola e seguita da 1-2 cifre -> decimale
+    const parts = s.split(",");
+    if (parts.length === 2 && parts[1].length <= 2) s = parts.join(".");
+    else s = s.replace(/,/g, "");
+  }
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : def;
+}
+
+function toInt(v: any, def: number, min?: number, max?: number): number {
+  let n = toNum(v, def);
+  // height in metri -> cm
+  if (min === 140 && max === 220 && n > 0 && n < 3) n = n * 100;
+  // weight in grammi -> kg
+  if (min === 40 && max === 130 && n > 1000) n = n / 1000;
+  // age in mesi? skip
+  n = Math.round(n);
+  if (typeof min === "number" && n < min) n = def;
+  if (typeof max === "number" && n > max) n = def;
+  return n;
+}
+
+function clean01to10(v: any, def = 6): number {
+  const n = toNum(v, def);
+  return Math.max(0, Math.min(10, Math.round(n)));
+}
+function clean0to100(v: any, def = 60): number {
+  const n = toNum(v, def);
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+function clean1to5(v: any, def = 3): number {
+  const n = toNum(v, def);
+  return Math.max(1, Math.min(5, Math.round(n)));
+}
+
+function sanitizeAi(ai: Partial<Player>): Partial<Player> {
+  const out: any = { ...ai };
+  // ratings 0..10
+  if (out.ratings && typeof out.ratings === "object") {
+    const r: any = {};
+    for (const k of Object.keys(out.ratings)) r[k] = clean01to10(out.ratings[k], 6);
+    out.ratings = r;
+  }
+  // skills 0..100
+  if (out.skills && typeof out.skills === "object") {
+    const s: any = {};
+    for (const k of Object.keys(out.skills)) s[k] = clean0to100(out.skills[k], 60);
+    out.skills = s;
+  }
+  // stars 1..5
+  if (out.stars && typeof out.stars === "object") {
+    const st: any = {};
+    for (const k of Object.keys(out.stars)) st[k] = clean1to5(out.stars[k], 3);
+    out.stars = st;
+  }
+  // market: numeri puliti, stringhe lasciate
+  if (out.market && typeof out.market === "object") {
+    const m: any = { ...out.market };
+    if ("value_min" in m) m.value_min = Math.round(toNum(m.value_min, 0));
+    if ("value_max" in m) m.value_max = Math.round(toNum(m.value_max, 0));
+    out.market = m;
+  }
+  // stats: tutti number
+  if (out.stats && typeof out.stats === "object") {
+    const ss: any = {};
+    for (const k of Object.keys(out.stats)) {
+      const n = toNum(out.stats[k], NaN);
+      if (Number.isFinite(n)) ss[k] = n;
+    }
+    out.stats = ss;
+  }
+  // heatmap: numeri 0..100
+  if (Array.isArray(out.heatmap)) {
+    out.heatmap = out.heatmap.map((v: any) => clean0to100(v, 0));
+  }
+  return out;
+}
+
 interface Props {
   /** Se true (default), il report estratto viene salvato automaticamente nel database
    *  e l'utente viene portato alla pagina del giocatore. Se false, viene messo in
