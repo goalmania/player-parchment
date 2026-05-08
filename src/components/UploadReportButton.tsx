@@ -48,7 +48,7 @@ export default function UploadReportButton({ autoSave = true, label }: Props) {
       if (payload?.error) throw new Error(payload.error);
       if (!payload?.player) throw new Error("Nessun report estratto");
 
-      const ai = payload.player as Partial<Player>;
+      const ai = sanitizeAi(payload.player as Partial<Player>);
       const draft: Partial<Player> = { ...ai, raw_report: payload.extracted_text || "" };
 
       if (!autoSave) {
@@ -60,52 +60,48 @@ export default function UploadReportButton({ autoSave = true, label }: Props) {
 
       // AUTO-SAVE — costruisci un Player completo con default sicuri sui campi mancanti
       const code = (ai.position_code as PositionCode) || "CM";
-      // Normalizza height (es. 1.88 m -> 188 cm) e weight in interi
-      const rawH = Number(ai.height);
-      const heightCm = Number.isFinite(rawH)
-        ? Math.round(rawH < 3 ? rawH * 100 : rawH)
-        : 180;
-      const rawW = Number(ai.weight);
-      const weightKg = Number.isFinite(rawW) ? Math.round(rawW) : 75;
+      const currentYear = new Date().getFullYear();
+      const age = toInt(ai.age, 20, 14, 50);
+      const birthYear = toInt(ai.birth_year, currentYear - age, 1950, currentYear);
       const full: Player = {
         id: "",
         num: ai.num || nextNum(),
-        name: ai.name || "Senza nome",
+        name: (ai.name || "Senza nome").toString().slice(0, 120),
         photo: ai.photo || "",
-        age: ai.age ?? 20,
-        birth_year: ai.birth_year ?? new Date().getFullYear() - (ai.age ?? 20),
+        age,
+        birth_year: birthYear,
         nationality: ai.nationality || "Italia",
         flag: ai.flag || "🇮🇹",
         club: ai.club || "",
         league: ai.league || "",
         region: ai.region || "Puglia",
-        lat: ai.lat ?? 41,
-        lng: ai.lng ?? 16.5,
+        lat: toNum(ai.lat, 41),
+        lng: toNum(ai.lng, 16.5),
         position_main: ai.position_main || POSITION_LABEL[code],
         position_code: code,
-        position_secondary: ai.position_secondary || [],
+        position_secondary: Array.isArray(ai.position_secondary) ? ai.position_secondary : [],
         foot: ai.foot || "Destro",
-        height: heightCm,
-        weight: weightKg,
-        tactical_roles: ai.tactical_roles || [],
+        height: toInt(ai.height, 180, 140, 220),
+        weight: toInt(ai.weight, 75, 40, 130),
+        tactical_roles: Array.isArray(ai.tactical_roles) ? ai.tactical_roles : [],
         ratings: ai.ratings || { technical: 6, tactical: 6, physical: 6, mental: 6, overall: 6 },
         skills: ai.skills || { ball_control: 60, passing: 60, dribbling: 60, finishing: 60, defensive_work: 60, tactical_iq: 60, decision_making: 60, aerial: 60, pace: 60, stamina: 60 },
         stars: ai.stars || { technique: 3, athleticism: 3, mentality: 3, potential: 3, market_value: 3 },
         market: ai.market || { value_min: 20000, value_max: 50000, potential: "Medio", risk: "Medio", timeline: "12 mesi", ready_level: "Serie D" },
-        tags: ai.tags || [],
+        tags: Array.isArray(ai.tags) ? ai.tags : [],
         verdict_type: ai.verdict_type || "monitor",
         verdict: ai.verdict || "",
         observation_type: ai.observation_type || "Video",
-        observation_count: ai.observation_count ?? 1,
+        observation_count: toInt(ai.observation_count, 1, 0, 9999),
         date: ai.date || new Date().toISOString().slice(0, 10),
-        strengths: ai.strengths || [],
-        weaknesses: ai.weaknesses || [],
+        strengths: Array.isArray(ai.strengths) ? ai.strengths : [],
+        weaknesses: Array.isArray(ai.weaknesses) ? ai.weaknesses : [],
         summary: ai.summary || "",
         video_url: (ai as any).video_url || "",
         raw_report: payload.extracted_text || "",
         heatmap: (ai.heatmap && ai.heatmap.length ? ai.heatmap : heatmapFromPosition(code)) as any,
-        observations: ai.observations || [],
-        formations_played: ai.formations_played || [],
+        observations: Array.isArray(ai.observations) ? ai.observations : [],
+        formations_played: Array.isArray(ai.formations_played) ? ai.formations_played : [],
         stats: (ai as any).stats || {},
         stats_source: (ai as any).stats_source || "",
         stats_season: (ai as any).stats_season || "",
