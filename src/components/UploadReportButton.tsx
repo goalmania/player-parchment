@@ -60,6 +60,13 @@ export default function UploadReportButton({ autoSave = true, label }: Props) {
 
       // AUTO-SAVE — costruisci un Player completo con default sicuri sui campi mancanti
       const code = (ai.position_code as PositionCode) || "CM";
+      // Normalizza height (es. 1.88 m -> 188 cm) e weight in interi
+      const rawH = Number(ai.height);
+      const heightCm = Number.isFinite(rawH)
+        ? Math.round(rawH < 3 ? rawH * 100 : rawH)
+        : 180;
+      const rawW = Number(ai.weight);
+      const weightKg = Number.isFinite(rawW) ? Math.round(rawW) : 75;
       const full: Player = {
         id: "",
         num: ai.num || nextNum(),
