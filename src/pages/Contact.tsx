@@ -1,6 +1,7 @@
 import { useState } from "react";
 import PageShell from "@/components/PageShell";
 import { toast } from "sonner";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 export default function Contact() {
   const [form, setForm] = useState({ name: "", email: "", type: "Report Singolo", message: "" });
@@ -56,6 +57,31 @@ export default function Contact() {
               <div className="font-mono text-xs uppercase tracking-[0.12rem] text-accent-lime">{s.time}</div>
             </div>
           ))}
+        </div>
+
+        <div className="section-label mb-4">// DOMANDE FREQUENTI</div>
+        <div className="dm-card p-6 mb-12">
+          <Accordion type="single" collapsible className="w-full">
+            {[
+              { q: "Cosa include un Report Singolo?", a: "Ogni report include scheda anagrafica, profilo tattico con ruoli, valutazione radar (6 assi), skills tecniche (0-100), stelle potenziale, heatmap di posizione, punti di forza e debolezza, verdetto finale con valutazione di mercato e video highlights quando disponibili." },
+              { q: "Quanto tempo ci vuole per ricevere un report?", a: "I report singoli vengono consegnati entro 5-7 giorni lavorativi dalla conferma. I pacchetti osservazioni richiedono circa 3 settimane. La consulenza continuativa prevede report settimanali con tempistiche concordate." },
+              { q: "Posso richiedere l'analisi di un giocatore specifico?", a: "Certo. Puoi indicare nome, club e campionato nel modulo di contatto o caricare direttamente materiale video tramite la piattaforma. Il report verrà redatto su misura seguendo i parametri tattici richiesti." },
+              { q: "Che differenza c'è tra i tre servizi?", a: "Il Report Singolo è ideale per un'occhiata puntuale su un target. Il Pacchetto Osservazioni offre 5 report scontati per coprire un reparto o un profilo specifico. La Consulenza Continuativa è un abbonamento mensile con database condiviso e supporto al direttore sportivo." },
+              { q: "I dati e i report sono aggiornati?", a: "Tutti i report si basano su osservazioni dirette e dati della stagione in corso. I parametri tecnico-tattici, le statistiche e i valori di mercato vengono rivisti al momento della redazione per garantire il massimo aggiornamento." },
+              { q: "Come funziona il Marketplace?", a: "Il Marketplace è la vetrina pubblica dove vengono pubblicate schede giocatori selezionate. I club e gli osservatori possono richiedere l'accesso completo: una volta approvati, il giocatore compare nella sezione 'Sbloccati' con tutti i dettagli." },
+              { q: "È possibile esportare i report?", a: "Sì. Ogni scheda giocatore è esportabile in PDF e CSV. Inoltre è possibile stampare una versione ottimizzata del profilo e condividere un link pubblico con altri membri dello staff." },
+              { q: "Lavori solo con club professionistici?", a: "No. DM Scout collabora con club professionistici, semiprofessionistici, agenzie e direttori sportivi di ogni livello. Ogni servizio viene scalato in base alle esigenze e al budget del cliente." },
+            ].map((faq, i) => (
+              <AccordionItem key={i} value={`item-${i}`} className="border-b border-border/50">
+                <AccordionTrigger className="text-left font-display font-semibold uppercase text-sm tracking-[0.08rem] hover:no-underline py-4">
+                  {faq.q}
+                </AccordionTrigger>
+                <AccordionContent className="text-gray-soft text-sm leading-relaxed pb-4">
+                  {faq.a}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
 
         <div className="section-label mb-4">// SCRIVIMI</div>
