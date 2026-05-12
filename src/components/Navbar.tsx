@@ -14,6 +14,8 @@ const links = [
   { to: "/squad-builder", label: "Squad" },
   { to: "/match-planner", label: "Match" },
   { to: "/requests", label: "Richieste" },
+  { to: "/faq", label: "FAQ" },
+  { to: "/contact", label: "Contatti" },
   { to: "/account", label: "Account" },
 ];
 

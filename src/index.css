@@ -39,7 +39,7 @@
     --border: 0 0% 100%;            /* used with /8 opacity */
     --input: 0 0% 10%;
     --ring: var(--accent);
-    --radius: 1px;
+    --radius: 0.5rem;
 
     --sidebar-background: var(--black);
     --sidebar-foreground: var(--white);
@@ -102,7 +102,7 @@
     border: 0.5px solid hsl(var(--border) / 0.08);
     background: transparent;
     transition: transform 0.2s ease, border-color 0.2s ease;
-    border-radius: 1px;
+    border-radius: 10px;
   }
   .dm-card:hover {
     border-color: hsl(var(--accent));
@@ -115,7 +115,7 @@
     color: hsl(var(--white));
     font-family: 'Barlow', sans-serif;
     padding: 0.6rem 1rem;
-    border-radius: 1px;
+    border-radius: 8px;
     width: 100%;
     outline: none;
     transition: border-color 0.15s ease;
@@ -131,7 +131,7 @@
     letter-spacing: 0.0625rem;
     text-transform: uppercase;
     padding: 0.7rem 1.8rem;
-    border-radius: 1px;
+    border-radius: 8px;
     cursor: pointer;
     border: none;
     transition: opacity 0.15s ease;
@@ -149,7 +149,7 @@
     letter-spacing: 0.0625rem;
     text-transform: uppercase;
     padding: 0.7rem 1.8rem;
-    border-radius: 1px;
+    border-radius: 8px;
     cursor: pointer;
     transition: border-color 0.15s ease, color 0.15s ease;
     display: inline-flex; align-items: center; gap: 0.5rem;
@@ -165,7 +165,7 @@
     letter-spacing: 0.0625rem;
     text-transform: uppercase;
     padding: 0.7rem 1.8rem;
-    border-radius: 1px;
+    border-radius: 8px;
     cursor: pointer;
   }
   .dm-btn-danger:hover { background: hsl(var(--red) / 0.1); }
@@ -185,7 +185,7 @@
     letter-spacing: 0.1rem;
     text-transform: uppercase;
     border: 0.5px solid hsl(var(--border) / 0.15);
-    border-radius: 1px;
+    border-radius: 4px;
     color: hsl(var(--white));
     white-space: nowrap;
   }
@@ -201,7 +201,7 @@
     letter-spacing: 0.15rem;
     text-transform: uppercase;
     padding: 0.25rem 0.6rem;
-    border-radius: 1px;
+    border-radius: 4px;
   }
   .verdict-badge[data-type="buy"]     { background: hsl(var(--accent)); color: hsl(var(--black)); }
   .verdict-badge[data-type="monitor"] { background: transparent; color: hsl(var(--orange)); border: 0.5px solid hsl(var(--orange)); }
@@ -211,7 +211,7 @@
     height: 6px;
     background: hsl(var(--gray-mid));
     overflow: hidden;
-    border-radius: 1px;
+    border-radius: 4px;
   }
   .skill-bar > span {
     display: block; height: 100%;
@@ -269,7 +269,7 @@
   background: #ffffff !important;
   color: #111 !important;
   padding: 12px;
-  border-radius: 2px;
+  border-radius: 8px;
 }
 .pdf-export-light [data-pdf-section] * {
   color: #111 !important;

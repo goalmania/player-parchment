@@ -57,7 +57,7 @@ export default {
         body: ["Barlow", "sans-serif"],
         mono: ["Space Mono", "monospace"],
       },
-      borderRadius: { lg: "1px", md: "1px", sm: "1px" },
+      borderRadius: { lg: "10px", md: "8px", sm: "4px" },
       keyframes: {
         "accordion-down": { from: { height: "0" }, to: { height: "var(--radix-accordion-content-height)" } },
         "accordion-up":   { from: { height: "var(--radix-accordion-content-height)" }, to: { height: "0" } },

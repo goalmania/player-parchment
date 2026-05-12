@@ -23,6 +23,7 @@ import Requests from "./pages/Requests";
 import Browse from "./pages/Browse";
 import Marketplace from "./pages/Marketplace";
 import Unlocked from "./pages/Unlocked";
+import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +62,7 @@ const App = () => (
           <Route path="/browse" element={<Protected><Browse /></Protected>} />
           <Route path="/marketplace" element={<Protected><Marketplace /></Protected>} />
           <Route path="/unlocked" element={<Protected><Unlocked /></Protected>} />
+          <Route path="/faq" element={<Protected><FAQ /></Protected>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
