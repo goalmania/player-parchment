@@ -42,6 +42,20 @@ export default function Auth() {
         });
         if (error) throw error;
 
+        // Guarantee trial status — patch profile if trigger used old function (default 'inactive')
+        const userId = data.user?.id;
+        if (userId) {
+          await new Promise(r => setTimeout(r, 500));
+          await supabase
+            .from("profiles")
+            .update({
+              plan_status: "trial",
+              trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            })
+            .eq("user_id", userId)
+            .eq("plan_status", "inactive");
+        }
+
         toast.success("Account creato! Hai 7 giorni di prova gratuita.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
