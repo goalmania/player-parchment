@@ -43,20 +43,6 @@ export default function Auth() {
         });
         if (error) throw error;
 
-        // Doppia garanzia: setta trial anche client-side se il trigger non lo ha già fatto
-        if (data.user) {
-          const trialEndsAt = new Date();
-          trialEndsAt.setDate(trialEndsAt.getDate() + 7);
-          await supabase.from("profiles").upsert({
-            user_id: data.user.id,
-            org_type: orgType,
-            org_name: orgName.trim(),
-            display_name: displayName.trim() || email,
-            plan_status: "trial",
-            trial_ends_at: trialEndsAt.toISOString(),
-          }, { onConflict: "user_id" });
-        }
-
         toast.success("Account creato! Hai 7 giorni di prova gratuita.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
