@@ -1,13 +1,18 @@
 /**
  * POST /functions/v1/activate-subscription
  *
- * Chiamato da dmfootballservices.it quando un utente acquista o rinnova
- * un abbonamento DM Scout.
+ * Chiamato da dmfootballservices.it o Clubis quando un utente acquista
+ * o rinnova un abbonamento manualmente (es. pagamento offline, promo, etc.).
+ * Per i pagamenti Stripe automatici usa invece il webhook stripe-webhook.
+ *
  * Protetto da ADMIN_SECRET_KEY (header: Authorization: Bearer <key>).
  *
  * Body:
- *   email              string  — email utente
- *   current_period_end string  — ISO date scadenza (opzionale, null = no scadenza)
+ *   email                string  — email utente (obbligatorio)
+ *   current_period_end   string  — ISO date scadenza (opzionale)
+ *   stripe_customer_id   string  — ID cliente Stripe (opzionale)
+ *   stripe_subscription_id string — ID sottoscrizione Stripe (opzionale)
+ *   product              string  — 'dmscout' | 'clubis' (default: 'dmscout')
  *
  * Response 200: { ok: true, user_id, plan_status }
  * Response 404: { error: "Nessun utente trovato per questa email" }
@@ -25,82 +30,76 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  // ── Auth ─────────────────────────────────────────────────────
+  // ── Auth ─────────────────────────────────────────────────────────────────
   const adminKey = Deno.env.get('ADMIN_SECRET_KEY')
   if (!adminKey) {
-    return new Response(JSON.stringify({ error: 'ADMIN_SECRET_KEY non configurata' }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return json({ error: 'ADMIN_SECRET_KEY non configurata' }, 500)
   }
   const authHeader = req.headers.get('authorization') ?? ''
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader
   if (token !== adminKey) {
-    return new Response(JSON.stringify({ error: 'Non autorizzato' }), {
-      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return json({ error: 'Non autorizzato' }, 401)
   }
 
-  // ── Body ─────────────────────────────────────────────────────
-  let body: { email: string; current_period_end?: string | null }
+  // ── Body ──────────────────────────────────────────────────────────────────
+  let body: {
+    email: string
+    current_period_end?: string | null
+    stripe_customer_id?: string | null
+    stripe_subscription_id?: string | null
+    product?: 'dmscout' | 'clubis'
+  }
   try {
     body = await req.json()
   } catch {
-    return new Response(JSON.stringify({ error: 'JSON non valido' }), {
-      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return json({ error: 'JSON non valido' }, 400)
   }
 
-  const { email, current_period_end } = body
+  const { email, current_period_end, stripe_customer_id, stripe_subscription_id } = body
   const emailNorm = email?.toLowerCase().trim()
   if (!emailNorm) {
-    return new Response(JSON.stringify({ error: 'Campo obbligatorio: email' }), {
-      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return json({ error: 'Campo obbligatorio: email' }, 400)
   }
 
-  // ── Client admin ─────────────────────────────────────────────
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const db = createClient(supabaseUrl, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
+  // ── Client admin ──────────────────────────────────────────────────────────
+  const db = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  )
 
-  // ── Trova utente per email ────────────────────────────────────
-  const { data: { users }, error: listErr } = await db.auth.admin.listUsers()
-  if (listErr) {
-    return new Response(JSON.stringify({ error: listErr.message }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  }
+  // ── Trova utente per email ────────────────────────────────────────────────
+  const { data: { users }, error: listErr } = await db.auth.admin.listUsers({ perPage: 1000 })
+  if (listErr) return json({ error: listErr.message }, 500)
+
   const authUser = users.find(u => u.email === emailNorm)
   if (!authUser) {
-    return new Response(JSON.stringify({ error: 'Nessun utente trovato per questa email.' }), {
-      status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return json({ error: 'Nessun utente trovato per questa email.' }, 404)
   }
 
-  // ── Aggiorna profilo ──────────────────────────────────────────
+  // ── Aggiorna profilo ──────────────────────────────────────────────────────
   const updatePayload: Record<string, unknown> = {
     plan_status: 'active',
+    cancel_at_period_end: false,
     updated_at: new Date().toISOString(),
   }
-  if (current_period_end) {
-    updatePayload.current_period_end = current_period_end
-  }
+  if (current_period_end)    updatePayload.current_period_end    = current_period_end
+  if (stripe_customer_id)    updatePayload.stripe_customer_id    = stripe_customer_id
+  if (stripe_subscription_id) updatePayload.stripe_subscription_id = stripe_subscription_id
 
   const { error: updateErr } = await db
     .from('profiles')
     .update(updatePayload)
     .eq('user_id', authUser.id)
 
-  if (updateErr) {
-    return new Response(JSON.stringify({ error: updateErr.message }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  }
+  if (updateErr) return json({ error: updateErr.message }, 500)
 
-  return new Response(
-    JSON.stringify({ ok: true, user_id: authUser.id, plan_status: 'active' }),
-    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-  )
+  return json({ ok: true, user_id: authUser.id, plan_status: 'active' }, 200)
 })
+
+function json(body: unknown, status: number) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...corsHeaders },
+  })
+}

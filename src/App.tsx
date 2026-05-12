@@ -51,28 +51,37 @@ function PlanGuard({ children }: { children: JSX.Element }) {
     );
   }
 
-  const planStatus = profile?.plan_status ?? "inactive";
-  const trialEndsAt = profile?.trial_ends_at ? new Date(profile.trial_ends_at) : null;
+  const planStatus      = profile?.plan_status ?? "inactive";
+  const trialEndsAt     = profile?.trial_ends_at      ? new Date(profile.trial_ends_at)      : null;
+  const currentPeriodEnd = profile?.current_period_end ? new Date(profile.current_period_end) : null;
   const now = new Date();
 
-  // Active subscription: allow
-  if (planStatus === "active") return children;
+  const emailParam = user.email ? `&email=${encodeURIComponent(user.email)}` : "";
+
+  // Active subscription: check if current_period_end hasn't passed
+  if (planStatus === "active") {
+    if (currentPeriodEnd && currentPeriodEnd < now) {
+      // Periodo scaduto lato client (webhook potrebbe non essere arrivato ancora)
+      return <Navigate to={`/piano-scaduto?motivo=expired${emailParam}`} replace />;
+    }
+    return children;
+  }
 
   // Trial still valid: allow
   if (planStatus === "trial" && trialEndsAt && trialEndsAt > now) return children;
 
   // Trial expired
   if (planStatus === "trial") {
-    return <Navigate to={`/piano-scaduto?motivo=trial_scaduto${user.email ? `&email=${encodeURIComponent(user.email)}` : ""}`} replace />;
+    return <Navigate to={`/piano-scaduto?motivo=trial_scaduto${emailParam}`} replace />;
   }
 
   // Subscription expired
   if (planStatus === "expired") {
-    return <Navigate to={`/piano-scaduto?motivo=expired${user.email ? `&email=${encodeURIComponent(user.email)}` : ""}`} replace />;
+    return <Navigate to={`/piano-scaduto?motivo=expired${emailParam}`} replace />;
   }
 
   // No subscription (inactive) or unknown
-  return <Navigate to={`/piano-scaduto?motivo=inactive${user.email ? `&email=${encodeURIComponent(user.email)}` : ""}`} replace />;
+  return <Navigate to={`/piano-scaduto?motivo=inactive${emailParam}`} replace />;
 }
 
 const App = () => (
