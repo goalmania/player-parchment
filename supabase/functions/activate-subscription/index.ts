@@ -87,10 +87,14 @@ Deno.serve(async (req) => {
   if (stripe_customer_id)    updatePayload.stripe_customer_id    = stripe_customer_id
   if (stripe_subscription_id) updatePayload.stripe_subscription_id = stripe_subscription_id
 
+  // DM Scout usa 'profiles' (user_id), Clubis usa 'clubs' (owner_id o simile)
+  const TABLE      = Deno.env.get('SUBSCRIPTION_TABLE')      ?? 'profiles'
+  const USER_FIELD = Deno.env.get('SUBSCRIPTION_USER_FIELD') ?? 'user_id'
+
   const { error: updateErr } = await db
-    .from('profiles')
+    .from(TABLE)
     .update(updatePayload)
-    .eq('user_id', authUser.id)
+    .eq(USER_FIELD, authUser.id)
 
   if (updateErr) return json({ error: updateErr.message }, 500)
 

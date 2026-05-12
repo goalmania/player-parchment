@@ -58,9 +58,15 @@ Deno.serve(async (req) => {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
+  // DM Scout usa 'profiles', Clubis usa 'clubs'
+  const TABLE = Deno.env.get('SUBSCRIPTION_TABLE') ?? 'profiles'
+  // Clubis identifica il record via stripe_customer_id sulla tabella clubs;
+  // DM Scout idem su profiles.
+  const EMAIL_FIELD = Deno.env.get('SUBSCRIPTION_EMAIL_FIELD') ?? 'user_id'
+
   async function updateByCustomer(customerId: string, updates: Record<string, unknown>) {
     const { error } = await db
-      .from('profiles')
+      .from(TABLE)
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('stripe_customer_id', customerId)
     if (error) console.error('updateByCustomer error:', error.message)
@@ -68,16 +74,25 @@ Deno.serve(async (req) => {
   }
 
   async function updateByEmail(email: string, updates: Record<string, unknown>) {
-    // listUsers potrebbe essere lento su basi grandi; ok per ora
-    const { data: { users }, error } = await db.auth.admin.listUsers({ perPage: 1000 })
-    if (error) { console.error('listUsers error:', error.message); return }
-    const authUser = users.find(u => u.email?.toLowerCase() === email.toLowerCase())
-    if (!authUser) { console.warn('updateByEmail: nessun utente per', email); return }
-    const { error: upErr } = await db
-      .from('profiles')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('user_id', authUser.id)
-    if (upErr) console.error('updateByEmail update error:', upErr.message)
+    if (EMAIL_FIELD === 'user_id') {
+      // DM Scout: cerca auth user, poi aggiorna profiles via user_id
+      const { data: { users }, error } = await db.auth.admin.listUsers({ perPage: 1000 })
+      if (error) { console.error('listUsers error:', error.message); return }
+      const authUser = users.find(u => u.email?.toLowerCase() === email.toLowerCase())
+      if (!authUser) { console.warn('updateByEmail: nessun utente per', email); return }
+      const { error: upErr } = await db
+        .from(TABLE)
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('user_id', authUser.id)
+      if (upErr) console.error('updateByEmail update error:', upErr.message)
+    } else {
+      // Clubis: aggiorna clubs via email_ufficiale o campo email diretto
+      const { error: upErr } = await db
+        .from(TABLE)
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq(EMAIL_FIELD, email.toLowerCase())
+      if (upErr) console.error('updateByEmail (field) update error:', upErr.message)
+    }
   }
 
   async function activateFromSession(

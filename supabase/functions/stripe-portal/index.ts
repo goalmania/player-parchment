@@ -43,11 +43,14 @@ Deno.serve(async (req) => {
     return json({ error: 'Non autorizzato' }, 401)
   }
 
-  // Leggi stripe_customer_id dal profilo
+  // DM Scout usa 'profiles' (lookup per user_id), Clubis usa 'clubs' (lookup per owner_id o simile)
+  const TABLE      = Deno.env.get('SUBSCRIPTION_TABLE')      ?? 'profiles'
+  const USER_FIELD = Deno.env.get('SUBSCRIPTION_USER_FIELD') ?? 'user_id'
+
   const { data: profile, error: profErr } = await db
-    .from('profiles')
+    .from(TABLE)
     .select('stripe_customer_id')
-    .eq('user_id', user.id)
+    .eq(USER_FIELD, user.id)
     .maybeSingle()
 
   if (profErr) return json({ error: profErr.message }, 500)
