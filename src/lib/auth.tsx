@@ -12,6 +12,9 @@ export interface Profile {
   org_name: string;
   display_name: string | null;
   avatar_url: string | null;
+  plan_status: "trial" | "active" | "expired" | "inactive" | null;
+  trial_ends_at: string | null;
+  current_period_end: string | null;
 }
 
 interface AuthState {
@@ -36,7 +39,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = async (uid: string) => {
     const { data, error } = await supabase
-      .from("profiles").select("*").eq("user_id", uid).maybeSingle();
+      .from("profiles")
+      .select("id, user_id, org_type, org_name, display_name, avatar_url, plan_status, trial_ends_at, current_period_end")
+      .eq("user_id", uid)
+      .maybeSingle();
     if (!error && data) setProfile(data as Profile);
     else setProfile(null);
   };
@@ -46,12 +52,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // listener FIRST, then getSession (per Supabase best practices)
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, sess) => {
       setSession(sess);
       setUser(sess?.user ?? null);
       if (sess?.user) {
-        // defer to avoid deadlock
         setTimeout(() => {
           fetchProfile(sess.user.id);
           loadPlayers().then(() => startRealtime());
@@ -74,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => { sub.subscription.unsubscribe(); };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const signOut = async () => {
     await supabase.auth.signOut();

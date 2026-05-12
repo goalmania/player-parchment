@@ -1,22 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
+import Logo from "@/components/Logo";
 
-type Mode = "signin" | "signup";
+const DMFOOTBALL_TRIAL_URL = "https://dmfootballservices.it/#prova-gratuita";
+const DMFOOTBALL_PRICING_URL = "https://dmfootballservices.it/#prezzi";
 
 export default function Auth() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [orgType, setOrgType] = useState<"agency" | "club">("agency");
-  const [orgName, setOrgName] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -27,109 +23,75 @@ export default function Auth() {
     e.preventDefault();
     setBusy(true);
     try {
-      if (mode === "signup") {
-        if (!orgName.trim()) { toast.error("Indica il nome della tua organizzazione"); return; }
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-            data: {
-              org_type: orgType,
-              org_name: orgName.trim(),
-              display_name: displayName.trim() || email,
-            },
-          },
-        });
-        if (error) throw error;
-        toast.success("Account creato. Benvenuto!");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        toast.success("Bentornato!");
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      toast.success("Bentornato!");
     } catch (e: any) {
-      toast.error(e?.message || "Operazione fallita");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const google = async () => {
-    setBusy(true);
-    try {
-      const r = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-      });
-      if (r.error) toast.error("Login Google fallito");
+      toast.error(e?.message || "Credenziali non valide");
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <PageShell>
-      <section className="container py-12 max-w-md">
-        <div className="section-label mb-3">// {mode === "signup" ? "REGISTRAZIONE" : "ACCESSO"}</div>
-        <h1 className="font-display font-black uppercase text-4xl md:text-5xl mb-2">
-          {mode === "signup" ? "Crea Account" : "Accedi"}
+    <div style={{
+      minHeight: "100vh",
+      background: "hsl(var(--black))",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "40px 20px",
+      fontFamily: "'Barlow', sans-serif",
+    }}>
+      {/* Logo */}
+      <div style={{ marginBottom: 32, display: "flex", alignItems: "center", gap: 12 }}>
+        <Logo size={32} variant="light" />
+        <span style={{
+          fontFamily: "'Barlow Condensed', sans-serif",
+          fontWeight: 900,
+          fontSize: 22,
+          letterSpacing: "0.18rem",
+          textTransform: "uppercase",
+          color: "hsl(var(--white))",
+        }}>DM SCOUT</span>
+      </div>
+
+      {/* Card */}
+      <div style={{
+        width: "100%",
+        maxWidth: 420,
+        border: "0.5px solid hsl(var(--border) / 0.12)",
+        background: "hsl(var(--gray-light))",
+        borderRadius: 12,
+        padding: "40px 36px",
+      }}>
+        <div style={{
+          fontFamily: "'Space Mono', monospace",
+          fontSize: "0.68rem",
+          letterSpacing: "0.18rem",
+          textTransform: "uppercase",
+          color: "hsl(var(--gray))",
+          marginBottom: 8,
+        }}>
+          // ACCESSO
+        </div>
+        <h1 style={{
+          fontFamily: "'Barlow Condensed', sans-serif",
+          fontWeight: 900,
+          fontSize: 32,
+          textTransform: "uppercase",
+          letterSpacing: "-0.01em",
+          color: "hsl(var(--white))",
+          marginBottom: 6,
+        }}>
+          Accedi a DM Scout
         </h1>
-        <p className="text-gray-soft mb-8">
-          {mode === "signup"
-            ? "Registra la tua agenzia o il tuo club per gestire il database giocatori."
-            : "Entra nel tuo spazio scouting personale."}
+        <p style={{ fontSize: 14, color: "hsl(var(--gray))", lineHeight: 1.5, marginBottom: 28 }}>
+          Entra nel tuo spazio scouting personale.
         </p>
 
-        <button
-          type="button"
-          onClick={google}
-          disabled={busy}
-          className="dm-btn-outline w-full justify-center mb-4"
-        >
-          Continua con Google
-        </button>
-
-        <div className="flex items-center gap-3 my-6">
-          <div className="flex-1 h-px bg-border/30" />
-          <span className="text-xs font-mono text-gray-soft uppercase tracking-[0.18rem]">oppure</span>
-          <div className="flex-1 h-px bg-border/30" />
-        </div>
-
-        <form onSubmit={submit} className="space-y-3">
-          {mode === "signup" && (
-            <>
-              <div>
-                <label className="text-xs font-mono uppercase tracking-[0.12rem] text-gray-soft mb-1 block">Tipo organizzazione</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {(["agency", "club"] as const).map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setOrgType(t)}
-                      className={`px-4 py-3 font-display font-bold uppercase tracking-[0.12rem] text-sm border-hairline ${
-                        orgType === t ? "bg-accent text-background" : "text-gray-soft hover:text-foreground"
-                      }`}
-                    >
-                      {t === "agency" ? "Agenzia" : "Club"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <input
-                className="dm-input"
-                placeholder={orgType === "agency" ? "Nome agenzia *" : "Nome club *"}
-                value={orgName}
-                onChange={(e) => setOrgName(e.target.value)}
-                required
-              />
-              <input
-                className="dm-input"
-                placeholder="Tuo nome (opzionale)"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-              />
-            </>
-          )}
+        <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <input
             type="email"
             className="dm-input"
@@ -137,31 +99,81 @@ export default function Auth() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            autoFocus
           />
           <input
             type="password"
             className="dm-input"
-            placeholder="Password (min 8 caratteri)"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             minLength={8}
             required
           />
-          <button type="submit" disabled={busy} className="dm-btn-primary w-full justify-center">
-            {busy ? "Attendere…" : mode === "signup" ? "Crea Account" : "Accedi"}
+          <button
+            type="submit"
+            disabled={busy}
+            className="dm-btn-primary"
+            style={{ justifyContent: "center", marginTop: 4 }}
+          >
+            {busy ? "Accesso in corso…" : "Accedi →"}
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-gray-soft">
-          {mode === "signup" ? "Hai già un account?" : "Sei nuovo?"}{" "}
-          <button
-            onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
-            className="text-accent-lime hover:underline"
-          >
-            {mode === "signup" ? "Accedi" : "Registrati"}
-          </button>
+        {/* Divisore */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 12,
+          margin: "28px 0 24px",
+        }}>
+          <div style={{ flex: 1, height: 1, background: "hsl(var(--border) / 0.12)" }} />
+          <span style={{ fontSize: 11, fontFamily: "'Space Mono', monospace", color: "hsl(var(--gray))", textTransform: "uppercase", letterSpacing: "0.12rem" }}>
+            Non hai un account?
+          </span>
+          <div style={{ flex: 1, height: 1, background: "hsl(var(--border) / 0.12)" }} />
         </div>
-      </section>
-    </PageShell>
+
+        {/* CTA prova gratuita */}
+        <a
+          href={DMFOOTBALL_TRIAL_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: "block",
+            textAlign: "center",
+            padding: "13px 24px",
+            background: "hsl(var(--accent))",
+            color: "hsl(var(--black))",
+            fontFamily: "'Barlow Condensed', sans-serif",
+            fontWeight: 900,
+            fontSize: 14,
+            textTransform: "uppercase",
+            letterSpacing: "0.06rem",
+            textDecoration: "none",
+            borderRadius: 8,
+            marginBottom: 10,
+            transition: "opacity 0.15s",
+          }}
+        >
+          Inizia la prova gratuita →
+        </a>
+
+        <p style={{ textAlign: "center", fontSize: 12, color: "hsl(var(--gray))", lineHeight: 1.5 }}>
+          7 giorni gratis, nessuna carta richiesta.{" "}
+          <a
+            href={DMFOOTBALL_PRICING_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "hsl(var(--accent))", textDecoration: "underline" }}
+          >
+            Vedi i prezzi
+          </a>
+        </p>
+      </div>
+
+      {/* Footer */}
+      <p style={{ marginTop: 24, fontSize: 11, color: "hsl(var(--gray))", fontFamily: "'Space Mono', monospace", textTransform: "uppercase", letterSpacing: "0.1rem" }}>
+        © {new Date().getFullYear()} DM Scout · Scouting Operations
+      </p>
+    </div>
   );
 }
