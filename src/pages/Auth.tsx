@@ -33,7 +33,6 @@ export default function Auth() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
             data: {
               org_type: orgType,
               org_name: orgName.trim(),
