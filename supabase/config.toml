@@ -8,3 +8,15 @@ verify_jwt = false
 
 [functions.import-stats]
 verify_jwt = false
+
+# Stripe webhook — NON richiede JWT (chiamata diretta da Stripe)
+[functions.stripe-webhook]
+verify_jwt = false
+
+# Portale clienti Stripe — richiede JWT utente
+[functions.stripe-portal]
+verify_jwt = true
+
+# Attivazione manuale abbonamento — NON richiede JWT (usa ADMIN_SECRET_KEY)
+[functions.activate-subscription]
+verify_jwt = false
