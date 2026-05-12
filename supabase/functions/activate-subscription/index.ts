@@ -87,14 +87,41 @@ Deno.serve(async (req) => {
   if (stripe_customer_id)    updatePayload.stripe_customer_id    = stripe_customer_id
   if (stripe_subscription_id) updatePayload.stripe_subscription_id = stripe_subscription_id
 
-  // DM Scout usa 'profiles' (user_id), Clubis usa 'clubs' (owner_id o simile)
-  const TABLE      = Deno.env.get('SUBSCRIPTION_TABLE')      ?? 'profiles'
-  const USER_FIELD = Deno.env.get('SUBSCRIPTION_USER_FIELD') ?? 'user_id'
+  // DM Scout: SUBSCRIPTION_TABLE=profiles, SUBSCRIPTION_USER_FIELD=user_id
+  // Clubis:   SUBSCRIPTION_TABLE=clubs, SUBSCRIPTION_LINK_TABLE=utenti,
+  //           SUBSCRIPTION_LINK_USER_FIELD=id, SUBSCRIPTION_LINK_FK=club_id
+  const TABLE           = Deno.env.get('SUBSCRIPTION_TABLE')           ?? 'profiles'
+  const USER_FIELD      = Deno.env.get('SUBSCRIPTION_USER_FIELD')      ?? 'user_id'
+  const LINK_TABLE      = Deno.env.get('SUBSCRIPTION_LINK_TABLE')
+  const LINK_USER_FIELD = Deno.env.get('SUBSCRIPTION_LINK_USER_FIELD') ?? 'id'
+  const LINK_FK         = Deno.env.get('SUBSCRIPTION_LINK_FK')         ?? 'club_id'
 
-  const { error: updateErr } = await db
-    .from(TABLE)
-    .update(updatePayload)
-    .eq(USER_FIELD, authUser.id)
+  let updateErr: { message: string } | null = null
+
+  if (LINK_TABLE) {
+    // Clubis: trova club_id tramite utenti.id = authUser.id
+    const { data: link, error: linkErr } = await db
+      .from(LINK_TABLE)
+      .select(LINK_FK)
+      .eq(LINK_USER_FIELD, authUser.id)
+      .maybeSingle()
+    if (linkErr) return json({ error: linkErr.message }, 500)
+    if (!link) return json({ error: 'Utente non associato a nessun club.' }, 404)
+
+    const clubId = (link as Record<string, string>)[LINK_FK]
+    const { error } = await db
+      .from(TABLE)
+      .update(updatePayload)
+      .eq('id', clubId)
+    updateErr = error
+  } else {
+    // DM Scout: aggiorna profiles via user_id
+    const { error } = await db
+      .from(TABLE)
+      .update(updatePayload)
+      .eq(USER_FIELD, authUser.id)
+    updateErr = error
+  }
 
   if (updateErr) return json({ error: updateErr.message }, 500)
 

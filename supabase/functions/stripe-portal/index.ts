@@ -43,19 +43,46 @@ Deno.serve(async (req) => {
     return json({ error: 'Non autorizzato' }, 401)
   }
 
-  // DM Scout usa 'profiles' (lookup per user_id), Clubis usa 'clubs' (lookup per owner_id o simile)
-  const TABLE      = Deno.env.get('SUBSCRIPTION_TABLE')      ?? 'profiles'
-  const USER_FIELD = Deno.env.get('SUBSCRIPTION_USER_FIELD') ?? 'user_id'
+  // DM Scout: SUBSCRIPTION_TABLE=profiles, SUBSCRIPTION_USER_FIELD=user_id
+  // Clubis:   SUBSCRIPTION_TABLE=clubs, SUBSCRIPTION_LINK_TABLE=utenti,
+  //           SUBSCRIPTION_LINK_USER_FIELD=id, SUBSCRIPTION_LINK_FK=club_id
+  const TABLE            = Deno.env.get('SUBSCRIPTION_TABLE')            ?? 'profiles'
+  const USER_FIELD       = Deno.env.get('SUBSCRIPTION_USER_FIELD')       ?? 'user_id'
+  const LINK_TABLE       = Deno.env.get('SUBSCRIPTION_LINK_TABLE')       // opzionale
+  const LINK_USER_FIELD  = Deno.env.get('SUBSCRIPTION_LINK_USER_FIELD')  ?? 'id'
+  const LINK_FK          = Deno.env.get('SUBSCRIPTION_LINK_FK')          ?? 'club_id'
 
-  const { data: profile, error: profErr } = await db
-    .from(TABLE)
-    .select('stripe_customer_id')
-    .eq(USER_FIELD, user.id)
-    .maybeSingle()
+  let stripeCustomerId: string | null = null
 
-  if (profErr) return json({ error: profErr.message }, 500)
+  if (LINK_TABLE) {
+    // Clubis: utenti.id → utenti.club_id → clubs.stripe_customer_id
+    const { data: link, error: linkErr } = await db
+      .from(LINK_TABLE)
+      .select(LINK_FK)
+      .eq(LINK_USER_FIELD, user.id)
+      .maybeSingle()
+    if (linkErr) return json({ error: linkErr.message }, 500)
+    if (!link) return json({ error: 'Utente non associato a nessun club.' }, 404)
 
-  if (!profile?.stripe_customer_id) {
+    const { data: sub, error: subErr } = await db
+      .from(TABLE)
+      .select('stripe_customer_id')
+      .eq('id', (link as Record<string, string>)[LINK_FK])
+      .maybeSingle()
+    if (subErr) return json({ error: subErr.message }, 500)
+    stripeCustomerId = sub?.stripe_customer_id ?? null
+  } else {
+    // DM Scout: profiles.user_id → profiles.stripe_customer_id
+    const { data: profile, error: profErr } = await db
+      .from(TABLE)
+      .select('stripe_customer_id')
+      .eq(USER_FIELD, user.id)
+      .maybeSingle()
+    if (profErr) return json({ error: profErr.message }, 500)
+    stripeCustomerId = profile?.stripe_customer_id ?? null
+  }
+
+  if (!stripeCustomerId) {
     return json({ error: 'Nessun abbonamento Stripe trovato per questo account.' }, 404)
   }
 
@@ -69,7 +96,7 @@ Deno.serve(async (req) => {
 
   try {
     const session = await stripe.billingPortal.sessions.create({
-      customer:   profile.stripe_customer_id,
+      customer:   stripeCustomerId,
       return_url: returnUrl,
     })
     return json({ url: session.url }, 200)
