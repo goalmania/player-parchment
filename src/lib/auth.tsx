@@ -20,21 +20,21 @@ export interface Profile {
 interface AuthState {
   session: Session | null;
   user: User | null;
-  profile: Profile | null;
+  profile: Profile | null | undefined; // undefined = not yet fetched, null = fetched but not found
   loading: boolean;
   refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
 const AuthCtx = createContext<AuthState>({
-  session: null, user: null, profile: null, loading: true,
+  session: null, user: null, profile: undefined, loading: true,
   refreshProfile: async () => {}, signOut: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (uid: string) => {

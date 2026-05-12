@@ -42,8 +42,8 @@ function PlanGuard({ children }: { children: JSX.Element }) {
 
   if (!user) return <Navigate to="/auth" replace />;
 
-  // Profile still loading after user is set
-  if (user && profile === null) {
+  // Profile not yet fetched (undefined = still in flight)
+  if (profile === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-soft">
         Caricamento…
