@@ -13,7 +13,7 @@ export default function Auth() {
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [orgType, setOrgType] = useState<"agency" | "club">("agency");
+  const [orgType, setOrgType] = useState<"agency" | "club" | "scout">("agency");
   const [orgName, setOrgName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -124,8 +124,8 @@ export default function Auth() {
         <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {mode === "signup" && (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {(["agency", "club"] as const).map((t) => (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                {(["agency", "club", "scout"] as const).map((t) => (
                   <button
                     key={t}
                     type="button"
@@ -142,13 +142,13 @@ export default function Auth() {
                       borderRadius: 8, cursor: "pointer",
                     }}
                   >
-                    {t === "agency" ? "Agenzia" : "Club"}
+                    {t === "agency" ? "Agenzia" : t === "club" ? "Club" : "Scout"}
                   </button>
                 ))}
               </div>
               <input
                 className="dm-input"
-                placeholder={orgType === "agency" ? "Nome agenzia *" : "Nome club *"}
+                placeholder={orgType === "agency" ? "Nome agenzia *" : orgType === "club" ? "Nome club *" : "Nome / Cognome *"}
                 value={orgName}
                 onChange={(e) => setOrgName(e.target.value)}
                 required
