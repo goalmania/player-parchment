@@ -86,7 +86,7 @@ export default function Contact() {
     if (!form.name || !form.email || !form.message) { toast.error("Compila tutti i campi"); return; }
     const subject = encodeURIComponent(`[DM Scout] ${form.type} — ${form.name}`);
     const body = encodeURIComponent(`Da: ${form.name} <${form.email}>\nTipo: ${form.type}\n\n${form.message}`);
-    window.location.href = `mailto:contact@dmscout.it?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:dimuropaolo7@gmail.com?subject=${subject}&body=${body}`;
     toast.success("Apertura client email…");
   };
 
@@ -113,13 +113,20 @@ export default function Contact() {
         {/* CONTATTI */}
         <div className="grid md:grid-cols-3 gap-px bg-border/10 border-hairline mb-12 rounded-lg overflow-hidden">
           {[
-            { k: "Email", v: "contact@dmscout.it" },
-            { k: "Posizione", v: "Puglia, Italia" },
-            { k: "LinkedIn", v: "linkedin.com/in/dmscout" },
+            { k: "Email", v: "info@dmfootballservices.it", href: "mailto:info@dmfootballservices.it" },
+            { k: "Posizione", v: "Puglia, Italia", href: null },
+            { k: "LinkedIn", v: "Paolo Di Muro", href: "https://www.linkedin.com/in/paolo-di-muro-567066193/" },
           ].map((c) => (
             <div key={c.k} className="bg-background p-5">
               <div className="section-label mb-2">// {c.k}</div>
-              <div className="font-display font-semibold uppercase">{c.v}</div>
+              {c.href ? (
+                <a href={c.href} target="_blank" rel="noopener noreferrer"
+                  className="font-display font-semibold uppercase hover:text-accent-lime transition-colors">
+                  {c.v}
+                </a>
+              ) : (
+                <div className="font-display font-semibold uppercase">{c.v}</div>
+              )}
             </div>
           ))}
         </div>
