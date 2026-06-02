@@ -10,8 +10,10 @@ export default function Index() {
   const high = players.filter((p) => p.tags.includes("HIGH POTENTIAL")).length;
   const leagues = new Set(players.map((p) => p.league)).size;
 
-  const topPotential = players.filter((p) => p.stars.potential === 5).slice(0, 3);
-  const lowCost = players.filter((p) => p.tags.includes("LOW COST")).slice(0, 3);
+  const topPotential = [...players].sort((a, b) => b.stars.potential - a.stars.potential || b.ratings.overall - a.ratings.overall).slice(0, 3);
+  const lowCost = players.filter((p) => p.tags.includes("LOW COST")).slice(0, 3).concat(
+    players.filter((p) => !p.tags.includes("LOW COST")).sort((a, b) => a.market.value_min - b.market.value_min)
+  ).slice(0, 3);
   const latest = [...players].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
 
   return (
@@ -36,7 +38,7 @@ export default function Index() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-px bg-border/10 border-hairline anim-fade-up anim-delay-2">
+          <div className="grid grid-cols-2 gap-px bg-border/10 border-hairline rounded-xl overflow-hidden anim-fade-up anim-delay-2">
             {[
               { label: "Giocatori totali", value: total },
               { label: "Verdetti BUY", value: buys },
@@ -56,7 +58,7 @@ export default function Index() {
 
       {/* INSIGHTS */}
       <section className="container pb-24">
-        <div className="grid md:grid-cols-3 gap-px bg-border/10 border-hairline">
+        <div className="grid md:grid-cols-3 gap-px bg-border/10 border-hairline rounded-xl overflow-hidden">
           {[
             { label: "// Top High Potential", list: topPotential },
             { label: "// Low Cost", list: lowCost },
