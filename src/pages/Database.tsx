@@ -36,6 +36,42 @@ export default function Database() {
     return Array.from(set).sort();
   }, [players]);
 
+  // Lista fissa completa campionati italiani (professionistici, dilettanti, giovanili)
+  const LEAGUE_OPTIONS: { group: string; leagues: string[] }[] = [
+    {
+      group: "Professionistici",
+      leagues: ["Serie A", "Serie B", "Serie C, Girone A", "Serie C, Girone B", "Serie C, Girone C"],
+    },
+    {
+      group: "Semi-professionistici",
+      leagues: ["Serie D, Girone A", "Serie D, Girone B", "Serie D, Girone C", "Serie D, Girone D", "Serie D, Girone E", "Serie D, Girone F", "Serie D, Girone G", "Serie D, Girone H", "Serie D, Girone I"],
+    },
+    {
+      group: "Dilettanti",
+      leagues: ["Eccellenza", "Promozione", "Prima Categoria", "Seconda Categoria", "Terza Categoria"],
+    },
+    {
+      group: "Regionali (esempi)",
+      leagues: ["Eccellenza Lombardia", "Eccellenza Piemonte", "Eccellenza Veneto", "Eccellenza Toscana", "Eccellenza Campania", "Eccellenza Sicilia", "Promozione Lombardia", "Promozione Veneto", "Promozione Lazio"],
+    },
+    {
+      group: "Giovanili Professionistici",
+      leagues: ["Primavera 1", "Primavera 2", "Primavera 3", "Under 18 Professionisti", "Under 17 Professionisti", "Under 16 Professionisti", "Under 15 Professionisti"],
+    },
+    {
+      group: "Giovanili Nazionali",
+      leagues: ["Under 18 Nazionale", "Under 17 Nazionale", "Under 16 Nazionale", "Under 15 Nazionale"],
+    },
+    {
+      group: "Giovanili Regionali",
+      leagues: ["Under 19 Regionale", "Under 17 Regionale", "Under 16 Regionale", "Under 15 Regionale", "Under 14 Regionale", "Under 13 Regionale", "Under 12 Regionale", "Under 11 Regionale", "Under 10 Regionale"],
+    },
+    {
+      group: "Altro",
+      leagues: ["Lega Nazionale Dilettanti", "Campionato Nazionale Juniores", "Sconosciuto"],
+    },
+  ];
+
   const leagueOptions = useMemo(() => {
     const set = new Set<string>();
     players.forEach((p) => { if (p.league) set.add(p.league); });
@@ -140,7 +176,21 @@ export default function Database() {
             </select>
             <select className="dm-input" value={league} onChange={(e) => setLeague(e.target.value)}>
               <option value="all">Campionato</option>
-              {leagueOptions.map((l) => <option key={l} value={l}>{l}</option>)}
+              {LEAGUE_OPTIONS.map((group) => (
+                <optgroup key={group.group} label={group.group}>
+                  {group.leagues.map((l) => (
+                    <option key={l} value={l}>{l}</option>
+                  ))}
+                </optgroup>
+              ))}
+              {/* Campionati presenti nei dati ma non nella lista fissa */}
+              {leagueOptions.filter((l) => !LEAGUE_OPTIONS.flatMap((g) => g.leagues).includes(l)).length > 0 && (
+                <optgroup label="Altri (dai dati)">
+                  {leagueOptions
+                    .filter((l) => !LEAGUE_OPTIONS.flatMap((g) => g.leagues).includes(l))
+                    .map((l) => <option key={l} value={l}>{l}</option>)}
+                </optgroup>
+              )}
             </select>
             <select className="dm-input" value={sort} onChange={(e) => setSort(e.target.value)}>
               <option value="overall_desc">Overall ↓</option>
