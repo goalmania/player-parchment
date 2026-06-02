@@ -36,6 +36,7 @@ export default function Compare() {
   const [pickerPos, setPickerPos] = useState<string>("all");
   const [pickerClub, setPickerClub] = useState<string>("all");
   const [exporting, setExporting] = useState(false);
+  const [pdfLightMode, setPdfLightMode] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
 
   // Saved comparisons
@@ -107,12 +108,14 @@ export default function Compare() {
   const exportPDF = async () => {
     if (!exportRef.current || selected.length < 2) return;
     setExporting(true);
+    setPdfLightMode(true);
+    // Wait two frames so RadarChart re-draws with lightBg before capture
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null))));
     try {
       const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
         import("html2canvas"),
         import("jspdf"),
       ]);
-      await new Promise((r) => requestAnimationFrame(() => r(null)));
 
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pageW = pdf.internal.pageSize.getWidth();
@@ -254,6 +257,7 @@ export default function Compare() {
     } catch (e: any) {
       toast.error(e?.message || "Export PDF fallito");
     } finally {
+      setPdfLightMode(false);
       setExporting(false);
     }
   };
@@ -499,6 +503,7 @@ export default function Compare() {
                   stroke: colorFor(i),
                 }))}
                 size={380}
+                lightBg={pdfLightMode}
               />
               <div className="flex flex-wrap justify-center gap-4 mt-3 text-xs font-mono">
                 {selected.map((p, i) => (

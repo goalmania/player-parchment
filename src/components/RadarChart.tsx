@@ -12,9 +12,10 @@ interface Props {
   values?: number[];           // single-series shortcut
   series?: RadarSeries[];      // multi-series
   size?: number;
+  lightBg?: boolean;           // use dark colors for light/white background (PDF export)
 }
 
-export default function RadarChart({ axes, values, series, size = 400 }: Props) {
+export default function RadarChart({ axes, values, series, size = 400, lightBg = false }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -29,6 +30,11 @@ export default function RadarChart({ axes, values, series, size = 400 }: Props) 
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, size, size);
 
+    if (lightBg) {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, size, size);
+    }
+
     const cx = size / 2;
     const cy = size / 2;
     const maxR = size / 2 - 60;
@@ -37,7 +43,7 @@ export default function RadarChart({ axes, values, series, size = 400 }: Props) 
     const angle = (i: number) => -Math.PI / 2 + (i * 2 * Math.PI) / n;
 
     // Background polygons (5 levels)
-    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.strokeStyle = lightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)";
     ctx.lineWidth = 1;
     for (let lvl = 1; lvl <= 5; lvl++) {
       const r = (maxR * lvl) / 5;
@@ -53,7 +59,7 @@ export default function RadarChart({ axes, values, series, size = 400 }: Props) 
     }
 
     // Axes spokes
-    ctx.strokeStyle = "rgba(255,255,255,0.06)";
+    ctx.strokeStyle = lightBg ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.06)";
     for (let i = 0; i < n; i++) {
       const a = angle(i);
       ctx.beginPath();
@@ -97,14 +103,14 @@ export default function RadarChart({ axes, values, series, size = 400 }: Props) 
 
     // Labels
     ctx.font = "600 11px 'Barlow Condensed', sans-serif";
-    ctx.fillStyle = "rgba(245,243,238,0.85)";
+    ctx.fillStyle = lightBg ? "rgba(20,20,20,0.85)" : "rgba(245,243,238,0.85)";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     axes.forEach((label, i) => {
       const a = angle(i);
       const lx = cx + (maxR + 26) * Math.cos(a);
       const ly = cy + (maxR + 26) * Math.sin(a);
-      ctx.fillStyle = "rgba(245,243,238,0.85)";
+      ctx.fillStyle = lightBg ? "rgba(20,20,20,0.85)" : "rgba(245,243,238,0.85)";
       ctx.fillText(label.toUpperCase(), lx, ly - 6);
       if (all.length === 1) {
         ctx.font = "700 12px 'Space Mono', monospace";
@@ -113,7 +119,7 @@ export default function RadarChart({ axes, values, series, size = 400 }: Props) 
         ctx.font = "600 11px 'Barlow Condensed', sans-serif";
       }
     });
-  }, [axes, values, series, size]);
+  }, [axes, values, series, size, lightBg]);
 
   return <canvas ref={ref} />;
 }
