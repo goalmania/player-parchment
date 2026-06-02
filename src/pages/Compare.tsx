@@ -479,8 +479,8 @@ export default function Compare() {
               {selected.map((p, i) => (
                 <div key={p.id} className="bg-background p-5" style={{ borderTop: `4px solid ${colorFor(i)}` }}>
                   <div className="section-label mb-1" style={{ color: colorFor(i) }}>// PLAYER {i + 1}</div>
-                  <h3 className="font-display font-bold text-xl uppercase truncate">{p.name}</h3>
-                  <div className="text-xs text-gray-soft truncate">{p.club || "—"} · {p.position_main}</div>
+                  <h3 className={`font-display font-bold text-xl uppercase ${pdfLightMode ? "break-words" : "truncate"}`}>{p.name}</h3>
+                  <div className={`text-xs text-gray-soft ${pdfLightMode ? "break-words" : "truncate"}`}>{p.club || "—"} · {p.position_main}</div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {p.tags.slice(0, 1).map((t) => <TagPill key={t} tag={t} />)}
                     <VerdictBadge type={p.verdict_type} />
