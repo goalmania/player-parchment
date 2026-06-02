@@ -10,7 +10,7 @@ import { getAllFieldMappings } from "@/lib/csvExport";
 import { toast } from "sonner";
 
 type ViewMode = "grid" | "list" | "mapping";
-type AgeBucket = "all" | "U18" | "U20" | "U23" | "Senior";
+type AgeBucket = "all" | string; // "all" oppure età singola es. "17"
 
 export default function Database() {
   const players = usePlayers();
@@ -53,10 +53,8 @@ export default function Database() {
       if (pos !== "all" && p.position_code !== pos) return false;
       if (foot !== "all" && p.foot !== foot) return false;
       if (age !== "all") {
-        if (age === "U18" && p.age > 17) return false;
-        if (age === "U20" && p.age > 19) return false;
-        if (age === "U23" && p.age > 22) return false;
-        if (age === "Senior" && p.age < 23) return false;
+        const ageNum = parseInt(age, 10);
+        if (!isNaN(ageNum) && p.age !== ageNum) return false;
       }
       if (tag !== "all" && !p.tags.includes(tag)) return false;
       if (verdict !== "all" && p.verdict_type !== verdict) return false;
@@ -122,10 +120,9 @@ export default function Database() {
             </select>
             <select className="dm-input" value={age} onChange={(e) => setAge(e.target.value as AgeBucket)}>
               <option value="all">Età</option>
-              <option value="U18">U18</option>
-              <option value="U20">U20</option>
-              <option value="U23">U23</option>
-              <option value="Senior">Senior</option>
+              {Array.from({ length: 36 }, (_, i) => i + 10).map((a) => (
+                <option key={a} value={String(a)}>{a} anni</option>
+              ))}
             </select>
             <select className="dm-input" value={tag} onChange={(e) => setTag(e.target.value)}>
               <option value="all">Tag</option>
@@ -208,9 +205,9 @@ export default function Database() {
         )}
 
         {view === "grid" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border/10 border-hairline">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((p, i) => (
-              <div key={p.id} className="bg-background"><PlayerCard p={p} delay={i} /></div>
+              <PlayerCard key={p.id} p={p} delay={i} />
             ))}
           </div>
         )}
