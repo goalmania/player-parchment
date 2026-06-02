@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { toast } from "sonner";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import emailjs from "@emailjs/browser";
 
 type ServiceType = "Report Singolo" | "Pacchetto Osservazioni" | "Consulenza Continuativa" | "Altro";
 
@@ -74,6 +75,10 @@ function getFaqsForType(type: ServiceType) {
   return ALL_FAQS.filter((f) => f.types.includes(type));
 }
 
+const EMAILJS_SERVICE  = import.meta.env.VITE_EMAILJS_SERVICE_ID  || "";
+const EMAILJS_TEMPLATE = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || "";
+const EMAILJS_KEY      = import.meta.env.VITE_EMAILJS_PUBLIC_KEY  || "";
+
 export default function Contact() {
   const [form, setForm] = useState<{ name: string; email: string; type: ServiceType; message: string }>({
     name: "",
@@ -81,13 +86,43 @@ export default function Contact() {
     type: "Report Singolo",
     message: "",
   });
+  const [sending, setSending] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const send = () => {
+  const send = async () => {
     if (!form.name || !form.email || !form.message) { toast.error("Compila tutti i campi"); return; }
-    const subject = encodeURIComponent(`[DM Scout] ${form.type} — ${form.name}`);
-    const body = encodeURIComponent(`Da: ${form.name} <${form.email}>\nTipo: ${form.type}\n\n${form.message}`);
-    window.location.href = `mailto:dimuropaolo7@gmail.com?subject=${subject}&body=${body}`;
-    toast.success("Apertura client email…");
+
+    // Fallback mailto se EmailJS non è ancora configurato
+    if (!EMAILJS_SERVICE || !EMAILJS_TEMPLATE || !EMAILJS_KEY) {
+      const subject = encodeURIComponent(`[DM Scout] ${form.type} — ${form.name}`);
+      const body = encodeURIComponent(`Da: ${form.name} <${form.email}>\nTipo: ${form.type}\n\n${form.message}`);
+      window.location.href = `mailto:dimuropaolo7@gmail.com?subject=${subject}&body=${body}`;
+      toast.success("Apertura client email…");
+      return;
+    }
+
+    setSending(true);
+    try {
+      await emailjs.send(
+        EMAILJS_SERVICE,
+        EMAILJS_TEMPLATE,
+        {
+          from_name:    form.name,
+          from_email:   form.email,
+          service_type: form.type,
+          message:      form.message,
+          to_email:     "dimuropaolo7@gmail.com",
+        },
+        EMAILJS_KEY
+      );
+      toast.success("Messaggio inviato! Ti rispondo entro 48h ✓");
+      setForm({ name: "", email: "", type: "Report Singolo", message: "" });
+    } catch (e: any) {
+      toast.error("Invio fallito — riprova o scrivi a info@dmfootballservices.it");
+      console.error(e);
+    } finally {
+      setSending(false);
+    }
   };
 
   const faqs = getFaqsForType(form.type);
@@ -149,9 +184,10 @@ export default function Contact() {
 
         {/* FORM CONTATTO */}
         <div id="contatto" className="section-label mb-4">// SCRIVIMI</div>
-        <div className="dm-card p-6 grid md:grid-cols-2 gap-4 mb-16">
+        <form ref={formRef} onSubmit={(e) => { e.preventDefault(); send(); }}
+          className="dm-card p-6 grid md:grid-cols-2 gap-4 mb-16">
           <input className="dm-input" placeholder="Nome" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <input className="dm-input" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          <input className="dm-input" type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           <select
             className="dm-input md:col-span-2"
             value={form.type}
@@ -164,9 +200,11 @@ export default function Contact() {
           </select>
           <textarea className="dm-input md:col-span-2" rows={5} placeholder="Messaggio" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
           <div className="md:col-span-2">
-            <button onClick={send} className="dm-btn-primary">Invia →</button>
+            <button type="submit" disabled={sending} className="dm-btn-primary disabled:opacity-60">
+              {sending ? "Invio in corso…" : "Invia →"}
+            </button>
           </div>
-        </div>
+        </form>
 
         {/* FAQ DINAMICHE */}
         <div id="faq" className="section-label mb-2">// DOMANDE FREQUENTI</div>
