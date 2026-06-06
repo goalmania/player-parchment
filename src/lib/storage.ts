@@ -42,19 +42,57 @@ function rowToPlayer(row: any): Player {
     lng: row.lng ?? 0,
     position_main: row.position_main || "Mezzala",
     position_code: row.position_code || "CM",
-    position_secondary: row.position_secondary || [],
+    position_secondary: Array.isArray(row.position_secondary) ? row.position_secondary : (row.position_secondary ? [row.position_secondary] : []),
     foot: row.foot || "Destro",
     height: row.height ?? 180,
     weight: row.weight ?? 75,
     tactical_roles: row.tactical_roles || [],
-    ratings: row.ratings || { technical: 6, tactical: 6, physical: 6, mental: 6, overall: 6 },
-    skills: row.skills || {
-      ball_control: 60, passing: 60, dribbling: 60, finishing: 60,
-      defensive_work: 60, tactical_iq: 60, decision_making: 60,
-      aerial: 60, pace: 60, stamina: 60,
-    },
-    stars: row.stars || { technique: 3, athleticism: 3, mentality: 3, potential: 3, market_value: 3 },
-    market: row.market || { value_min: 0, value_max: 0, potential: "Medio", risk: "Medio", timeline: "12 mesi", ready_level: "" },
+    ratings: (() => {
+      const r = row.ratings || {};
+      return {
+        technical: Number(r.technical) || 6,
+        tactical: Number(r.tactical) || 6,
+        physical: Number(r.physical) || 6,
+        mental: Number(r.mental) || 6,
+        overall: Number(r.overall) || 6,
+      };
+    })(),
+    skills: (() => {
+      const s = row.skills || {};
+      return {
+        ball_control: Number(s.ball_control) || 60,
+        passing: Number(s.passing) || 60,
+        dribbling: Number(s.dribbling) || 60,
+        finishing: Number(s.finishing) || 60,
+        defensive_work: Number(s.defensive_work) || 60,
+        tactical_iq: Number(s.tactical_iq) || 60,
+        decision_making: Number(s.decision_making) || 60,
+        aerial: Number(s.aerial) || 60,
+        pace: Number(s.pace) || 60,
+        stamina: Number(s.stamina) || 60,
+      };
+    })(),
+    stars: (() => {
+      const s = row.stars || {};
+      return {
+        technique: Number(s.technique) || 3,
+        athleticism: Number(s.athleticism) || 3,
+        mentality: Number(s.mentality) || 3,
+        potential: Number(s.potential) || 3,
+        market_value: Number(s.market_value) || 3,
+      };
+    })(),
+    market: (() => {
+      const m = row.market || {};
+      return {
+        value_min: Number(m.value_min) || 0,
+        value_max: Number(m.value_max) || 0,
+        potential: m.potential || "Medio",
+        risk: m.risk || "Medio",
+        timeline: m.timeline || "12 mesi",
+        ready_level: m.ready_level || "",
+      };
+    })(),
     tags: row.tags || [],
     verdict_type: row.verdict_type || "monitor",
     verdict: row.verdict || "",
@@ -184,7 +222,7 @@ export async function loadPlayers(): Promise<Player[]> {
       console.error("loadPlayers failed:", error);
       cache = [];
     } else {
-      cache = (data || []).map(rowToPlayer);
+      cache = dedupPlayers((data || []).map(rowToPlayer));
     }
     initialized = true;
     notify();
@@ -229,12 +267,46 @@ export function subscribe(fn: () => void) {
   return () => { subscribers.delete(fn); };
 }
 
+/** Deduplica per nome (case-insensitive) + birth_year — tieni il primo inserito. */
+function dedupPlayers(list: Player[]): Player[] {
+  const seen = new Set<string>();
+  return list.filter((p) => {
+    const key = `${(p.name || "").trim().toLowerCase()}|${p.birth_year ?? ""}`;
+    if (seen.has(key)) return false;
+    seen.set(key);
+    return true;
+  });
+}
+
 export function getPlayers(): Player[] {
   return cache;
 }
 
 export function getPlayer(id: string): Player | null {
   return cache.find((p) => p.id === id) ?? null;
+}
+
+/**
+ * Fetches a single player by UUID directly from Supabase, waiting for the
+ * auth session to be fully initialized (INITIAL_SESSION event). Used by
+ * PlayerPrint which opens in a fresh tab with an empty in-memory cache.
+ */
+export function fetchPlayerById(id: string): Promise<Player | null> {
+  return new Promise((resolve) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event !== "INITIAL_SESSION" && event !== "SIGNED_IN") return;
+        subscription.unsubscribe();
+        if (!session) { resolve(null); return; }
+        const { data, error } = await supabase
+          .from("players")
+          .select("*")
+          .eq("id", id)
+          .maybeSingle();
+        resolve(data && !error ? rowToPlayer(data) : null);
+      }
+    );
+  });
 }
 
 export function generateId(name: string): string {
@@ -309,7 +381,8 @@ export function exportJSON() {
   URL.revokeObjectURL(url);
 }
 
-/** Import players from a JSON file into the current account. */
+/** Import players from a JSON file into the current account.
+ *  Duplicates are detected by name (case-insensitive) + birth_year and skipped. */
 export async function importJSON(file: File): Promise<number> {
   const ownerId = await getOwnerId();
   if (!ownerId) throw new Error("Devi essere autenticato.");
@@ -317,7 +390,18 @@ export async function importJSON(file: File): Promise<number> {
   const incoming = JSON.parse(text) as Player[];
   if (!Array.isArray(incoming)) throw new Error("Formato JSON non valido");
 
-  const rows = incoming.map((p) => {
+  const toInsert = incoming.filter((p) => {
+    const incomingName = (p.name || "").trim().toLowerCase();
+    const incomingYear = p.birth_year;
+    return !cache.some((existing) => {
+      const existingName = (existing.name || "").trim().toLowerCase();
+      return existingName === incomingName && existing.birth_year === incomingYear;
+    });
+  });
+
+  if (toInsert.length === 0) return 0;
+
+  const rows = toInsert.map((p) => {
     const r = playerToRow(p, ownerId) as any;
     delete r.id;
     return r;
@@ -325,7 +409,7 @@ export async function importJSON(file: File): Promise<number> {
   const { error } = await supabase.from("players").insert(rows);
   if (error) throw error;
   await loadPlayers();
-  return incoming.length;
+  return toInsert.length;
 }
 
 /** Migrate legacy localStorage players to the current account. */
