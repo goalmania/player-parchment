@@ -99,10 +99,10 @@
   }
 
   .dm-card {
-    border: 0.5px solid hsl(var(--border) / 0.08);
-    background: transparent;
+    border: 1px solid hsl(var(--border) / 0.14);
+    background: hsl(var(--gray-light));
     transition: transform 0.2s ease, border-color 0.2s ease;
-    border-radius: 10px;
+    border-radius: 16px;
   }
   .dm-card:hover {
     border-color: hsl(var(--accent));
@@ -179,13 +179,13 @@
 
   .tag-pill {
     display: inline-block;
-    padding: 0.15rem 0.5rem;
+    padding: 0.2rem 0.65rem;
     font-family: 'Space Mono', monospace;
     font-size: 0.6rem;
     letter-spacing: 0.1rem;
     text-transform: uppercase;
-    border: 0.5px solid hsl(var(--border) / 0.15);
-    border-radius: 4px;
+    border: 1px solid hsl(var(--border) / 0.2);
+    border-radius: 999px;
     color: hsl(var(--white));
     white-space: nowrap;
   }
@@ -197,25 +197,26 @@
   .verdict-badge {
     display: inline-flex; align-items: center; gap: 0.4rem;
     font-family: 'Space Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 0.15rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.1rem;
     text-transform: uppercase;
-    padding: 0.25rem 0.6rem;
-    border-radius: 4px;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    border: 1px solid;
   }
-  .verdict-badge[data-type="buy"]     { background: hsl(var(--accent)); color: hsl(var(--black)); }
-  .verdict-badge[data-type="monitor"] { background: transparent; color: hsl(var(--orange)); border: 0.5px solid hsl(var(--orange)); }
-  .verdict-badge[data-type="pass"]    { background: transparent; color: hsl(var(--red));    border: 0.5px solid hsl(var(--red)); }
+  .verdict-badge[data-type="buy"]     { background: transparent; color: hsl(var(--accent)); border-color: hsl(var(--accent) / 0.7); }
+  .verdict-badge[data-type="monitor"] { background: transparent; color: hsl(var(--orange)); border-color: hsl(var(--orange) / 0.7); }
+  .verdict-badge[data-type="pass"]    { background: transparent; color: hsl(var(--red));    border-color: hsl(var(--red) / 0.7); }
 
   .skill-bar {
-    height: 6px;
+    height: 4px;
     background: hsl(var(--gray-mid));
     overflow: hidden;
     border-radius: 4px;
   }
   .skill-bar > span {
     display: block; height: 100%;
-    background: linear-gradient(90deg, hsl(var(--gray-mid)), hsl(var(--accent)));
+    background: linear-gradient(90deg, hsl(167 100% 39% / 0.4), hsl(var(--accent)));
     animation: expandBar 0.8s ease-out forwards;
     transform-origin: left;
   }

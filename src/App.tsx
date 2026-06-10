@@ -24,6 +24,8 @@ import Requests from "./pages/Requests";
 import Browse from "./pages/Browse";
 import Marketplace from "./pages/Marketplace";
 import Unlocked from "./pages/Unlocked";
+import Purchases from "./pages/Purchases";
+import AdminWithdrawals from "./pages/AdminWithdrawals";
 import PianoScaduto from "./pages/PianoScaduto";
 import NotFound from "./pages/NotFound";
 
@@ -41,6 +43,9 @@ function PlanGuard({ children }: { children: JSX.Element }) {
   }
 
   if (!user) return <Navigate to="/auth" replace />;
+
+  // Owner account always has full access
+  if (user.email === "dimuropaolo77@gmail.com") return children;
 
   // Profile not yet fetched (undefined = still in flight)
   if (profile === undefined) {
@@ -106,6 +111,8 @@ const App = () => (
           <Route path="/browse" element={<PlanGuard><Browse /></PlanGuard>} />
           <Route path="/marketplace" element={<PlanGuard><Marketplace /></PlanGuard>} />
           <Route path="/unlocked" element={<PlanGuard><Unlocked /></PlanGuard>} />
+          <Route path="/purchases" element={<PlanGuard><Purchases /></PlanGuard>} />
+          <Route path="/admin/withdrawals" element={<PlanGuard><AdminWithdrawals /></PlanGuard>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

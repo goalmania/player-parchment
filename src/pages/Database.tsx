@@ -242,7 +242,7 @@ export default function Database() {
                   e.target.value = "";
                 }}
               />
-              <Link to="/ai-report" className="dm-btn-primary !py-1.5 !px-3 text-xs">⚡ Report AI</Link>
+              <Link to="/ai-report" className="dm-btn-primary !py-1.5 !px-3 text-xs">⚡ Report Auto</Link>
             </div>
           </div>
         </div>

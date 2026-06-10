@@ -42,7 +42,31 @@ function calcOverall(r: Player["ratings"]) {
 
 export default function ReportForm({ initial, mode }: Props) {
   const navigate = useNavigate();
-  const [data, setData] = useState<Player>(() => ({ ...empty, ...(initial || {}) } as Player));
+  const [data, setData] = useState<Player>(() => {
+    const merged = { ...empty, ...(initial || {}) } as Player;
+    // Sanitise fields that AI might return as wrong types
+    const toArr = (v: any) => Array.isArray(v) ? v : (v ? [v] : []);
+    merged.position_secondary = toArr(merged.position_secondary);
+    merged.tags = toArr(merged.tags);
+    merged.strengths = toArr(merged.strengths);
+    merged.weaknesses = toArr(merged.weaknesses);
+    merged.tactical_roles = toArr(merged.tactical_roles).filter((r: any) => r && typeof r === "object");
+    merged.formations_played = toArr(merged.formations_played);
+    merged.heatmap = Array.isArray(merged.heatmap) && merged.heatmap.length > 0 ? merged.heatmap : heatmapFromPosition(merged.position_code || "CM");
+    merged.observations = toArr(merged.observations);
+    // Ensure position_code is always a valid key in ROLE_OPTIONS_BY_POSITION
+    if (!POSITION_CODES.includes(merged.position_code as PositionCode)) {
+      merged.position_code = "CM";
+      merged.position_main = POSITION_LABEL["CM"];
+    }
+    // Ensure each tactical role has a valid role_code for its position
+    const validCodes = new Set(ROLE_OPTIONS_BY_POSITION[merged.position_code as PositionCode].map((o) => o.code));
+    merged.tactical_roles = merged.tactical_roles.map((r: any) => ({
+      ...r,
+      role_code: validCodes.has(r.role_code) ? r.role_code : ROLE_OPTIONS_BY_POSITION[merged.position_code as PositionCode][0]?.code ?? r.role_code,
+    }));
+    return merged;
+  });
   const [strengthInput, setStrengthInput] = useState("");
   const [weakInput, setWeakInput] = useState("");
 
@@ -253,7 +277,7 @@ export default function ReportForm({ initial, mode }: Props) {
           <div className="space-y-3 text-sm">
             <p className="text-gray-soft">
               Dipingi le zone in cui il giocatore opera di più. Vista <strong className="text-foreground">top-down</strong>:
-              porta avversaria in alto, propria in basso. L'AI può generarla automaticamente dal testo.
+              porta avversaria in alto, propria in basso. Il sistema può generarla automaticamente dal testo.
             </p>
             <button
               type="button"

@@ -2,18 +2,20 @@ import { Link, useSearchParams } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import ReportForm from "@/components/ReportForm";
 import { getPlayer } from "@/lib/storage";
+import { usePlayers } from "@/lib/usePlayers";
 
 export default function EditReport() {
   const [params] = useSearchParams();
   const id = params.get("id") || "";
+  usePlayers(); // keep cache warm and re-render when loaded
   const player = getPlayer(id);
 
   if (!player) {
     return (
       <PageShell>
         <div className="container py-24 text-center">
-          <h2 className="font-display font-bold text-3xl uppercase mb-3">Report non trovato</h2>
-          <Link to="/database" className="dm-btn-primary">← Database</Link>
+          <div className="section-label mb-3">// CARICAMENTO</div>
+          <p className="text-gray-soft">Caricamento report in corso…</p>
         </div>
       </PageShell>
     );

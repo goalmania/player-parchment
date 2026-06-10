@@ -33,7 +33,16 @@ export default function AiReport() {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      setPreview({ ...data.player, raw_report: text });
+      const p = data.player;
+      // Normalise fields that Gemini sometimes returns as strings instead of arrays
+      if (!Array.isArray(p.position_secondary)) p.position_secondary = p.position_secondary ? [p.position_secondary] : [];
+      if (!Array.isArray(p.tags)) p.tags = p.tags ? [p.tags] : [];
+      if (!Array.isArray(p.strengths)) p.strengths = p.strengths ? [p.strengths] : [];
+      if (!Array.isArray(p.weaknesses)) p.weaknesses = p.weaknesses ? [p.weaknesses] : [];
+      if (!Array.isArray(p.tactical_roles)) p.tactical_roles = p.tactical_roles ? [p.tactical_roles] : [];
+      if (!Array.isArray(p.formations_played)) p.formations_played = p.formations_played ? [p.formations_played] : [];
+      if (!Array.isArray(p.heatmap)) p.heatmap = [];
+      setPreview({ ...p, raw_report: text });
     } catch (e: any) {
       setError(e?.message || "Errore durante l'analisi");
     } finally {
@@ -60,9 +69,9 @@ export default function AiReport() {
   return (
     <PageShell>
       <section className="container py-10 max-w-4xl">
-        <div className="section-label mb-3">// GENERATORE REPORT AI</div>
+        <div className="section-label mb-3">// GENERATORE REPORT AUTOMATICO</div>
         <h1 className="font-display font-black uppercase text-4xl md:text-5xl mb-2">Da Testo a Scheda</h1>
-        <p className="text-gray-soft mb-8">Scrivi liberamente le tue osservazioni. L'AI estrarrà e compilerà tutti i campi del report automaticamente.</p>
+        <p className="text-gray-soft mb-8">Scrivi liberamente le tue osservazioni. Il sistema estrarrà e compilerà tutti i campi del report automaticamente.</p>
 
         <div className="grid md:grid-cols-2 gap-3 mb-3">
           <input className="dm-input" placeholder="Nome giocatore *" value={name} onChange={(e) => setName(e.target.value)} />

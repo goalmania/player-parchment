@@ -82,7 +82,7 @@ export default function StatsEditor({ value, source, season, onChange }: Props) 
 
       {showImport && (
         <div className="border-hairline p-4 bg-gradient-to-br from-accent-lime/10 to-transparent space-y-3">
-          <div className="font-display font-bold uppercase text-sm">Import statistiche AI</div>
+          <div className="font-display font-bold uppercase text-sm">Import statistiche automatico</div>
           <p className="text-xs text-gray-soft">
             Incolla l'URL della pagina del giocatore (Transfermarkt, FBref, Sofascore, WhoScored…)
             <strong className="text-foreground"> oppure</strong> il testo copiato dalla scheda. L'AI estrae i numeri e compila i campi.

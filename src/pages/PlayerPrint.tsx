@@ -1,30 +1,56 @@
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { getPlayer } from "@/lib/storage";
+import { fetchPlayerById } from "@/lib/storage";
 import Logo from "@/components/Logo";
 import HeatmapEditor from "@/components/HeatmapEditor";
 import RadarChart from "@/components/RadarChart";
 import { STATS_GROUPS, STATS_MATCH_GROUPS } from "@/lib/types";
+import type { Player } from "@/lib/types";
 
-/**
- * Print-optimized player report. Opens in a new tab and auto-triggers
- * the browser print dialog so the user can "Save as PDF".
- */
 export default function PlayerPrint() {
   const [params] = useSearchParams();
   const id = params.get("id") || "";
-  const player = getPlayer(id);
+  const [player, setPlayer] = useState<Player | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  // Applica subito sfondo bianco sul body prima del primo paint,
+  // altrimenti il CSS Tailwind globale (bg-background = nero) rimane visibile.
+  useLayoutEffect(() => {
+    document.documentElement.style.background = "#ffffff";
+    document.body.style.background = "#ffffff";
+    document.body.style.color = "#111111";
+    // Nasconde il noise overlay body::before
+    const style = document.createElement("style");
+    style.id = "__print-overrides";
+    style.textContent = "body::before { display: none !important; }";
+    document.head.appendChild(style);
+    return () => { document.getElementById("__print-overrides")?.remove(); };
+  }, []);
 
   useEffect(() => {
-    if (!player) return;
-    // Wait for canvas/heatmap to render before opening the print dialog.
+    fetchPlayerById(id).then((p) => {
+      setPlayer(p);
+      setDataLoaded(true);
+    });
+  }, [id]);
+
+  useEffect(() => {
+    if (!dataLoaded || !player) return;
     const t = setTimeout(() => window.print(), 700);
     return () => clearTimeout(t);
-  }, [player]);
+  }, [dataLoaded, player]);
+
+  if (!dataLoaded) {
+    return (
+      <div style={{ padding: 40, fontFamily: "Barlow, sans-serif", color: "#111", background: "#fff", minHeight: "100vh" }}>
+        Caricamento report…
+      </div>
+    );
+  }
 
   if (!player) {
     return (
-      <div style={{ padding: 40, fontFamily: "Barlow, sans-serif", color: "#111" }}>
+      <div style={{ padding: 40, fontFamily: "Barlow, sans-serif", color: "#111", background: "#fff", minHeight: "100vh" }}>
         <h1>Report non trovato</h1>
         <Link to="/database">← Torna al database</Link>
       </div>
@@ -45,7 +71,7 @@ export default function PlayerPrint() {
     <>
       <style>{`
         @page { size: A4; margin: 14mm; }
-        html, body, #print-root { background: #ffffff !important; color: #111 !important; }
+        html, body { background: #ffffff !important; color: #111 !important; }
         body::before { display: none !important; }
         .print-wrap { max-width: 800px; margin: 0 auto; font-family: 'Barlow', sans-serif; color: #111; }
         .print-wrap h1, .print-wrap h2, .print-wrap h3 { font-family: 'Barlow Condensed', sans-serif; }

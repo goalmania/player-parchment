@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import Logo from "@/components/Logo";
 
-type Mode = "signin" | "signup";
+type Mode = "signin" | "signup" | "reset";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -13,14 +13,54 @@ export default function Auth() {
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [orgType, setOrgType] = useState<"agency" | "club" | "scout">("agency");
   const [orgName, setOrgName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate("/", { replace: true });
-  }, [user, loading, navigate]);
+    // Detect password-reset token in URL hash
+    const hash = window.location.hash;
+    if (hash.includes("type=recovery")) {
+      setMode("reset");
+      return;
+    }
+    if (!loading && user && mode !== "reset") navigate("/", { replace: true });
+  }, [user, loading, navigate, mode]);
+
+  const forgotPassword = async () => {
+    if (!email.trim()) { toast.error("Inserisci la tua email prima"); return; }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+      if (error) throw error;
+      toast.success("Email di reset inviata! Controlla la posta (anche spam).");
+    } catch (e: any) {
+      toast.error(e?.message || "Errore nell'invio");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitNewPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 8) { toast.error("La password deve essere di almeno 8 caratteri"); return; }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      toast.success("Password aggiornata! Puoi accedere ora.");
+      setMode("signin");
+      navigate("/auth", { replace: true });
+    } catch (e: any) {
+      toast.error(e?.message || "Errore nel salvataggio della password");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +145,7 @@ export default function Auth() {
           textTransform: "uppercase", color: "hsl(var(--gray))",
           marginBottom: 8,
         }}>
-          // {mode === "signup" ? "INIZIA LA PROVA GRATUITA" : "ACCESSO"}
+          // {mode === "signup" ? "INIZIA LA PROVA GRATUITA" : mode === "reset" ? "NUOVA PASSWORD" : "ACCESSO"}
         </div>
         <h1 style={{
           fontFamily: "'Barlow Condensed', sans-serif",
@@ -113,15 +153,51 @@ export default function Auth() {
           textTransform: "uppercase", color: "hsl(var(--white))",
           marginBottom: 6,
         }}>
-          {mode === "signup" ? "7 giorni gratis" : "Accedi"}
+          {mode === "signup" ? "7 giorni gratis" : mode === "reset" ? "Nuova password" : "Accedi"}
         </h1>
         <p style={{ fontSize: 14, color: "hsl(var(--gray))", lineHeight: 1.5, marginBottom: 24 }}>
           {mode === "signup"
             ? "Crea il tuo account e inizia subito la prova gratuita. Nessuna carta richiesta."
+            : mode === "reset"
+            ? "Scegli una nuova password per il tuo account."
             : "Entra nel tuo spazio scouting personale."}
         </p>
 
-        <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {mode === "reset" && (
+          <form onSubmit={submitNewPassword} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <input
+              type="password"
+              className="dm-input"
+              placeholder="Nuova password (min 8 caratteri)"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              minLength={8}
+              required
+              autoFocus
+            />
+            <button
+              type="submit"
+              disabled={busy}
+              style={{
+                marginTop: 4,
+                background: "hsl(var(--accent))",
+                color: "hsl(var(--black))",
+                fontFamily: "'Barlow Condensed', sans-serif",
+                fontWeight: 900, fontSize: 14,
+                textTransform: "uppercase", letterSpacing: "0.06rem",
+                padding: "13px 24px",
+                border: "none", borderRadius: 8,
+                cursor: busy ? "not-allowed" : "pointer",
+                opacity: busy ? 0.6 : 1,
+                width: "100%",
+              }}
+            >
+              {busy ? "Salvataggio…" : "Salva nuova password →"}
+            </button>
+          </form>
+        )}
+
+        {mode !== "reset" && <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {mode === "signup" && (
             <>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
@@ -202,7 +278,7 @@ export default function Auth() {
               ? "Inizia la prova gratuita →"
               : "Accedi →"}
           </button>
-        </form>
+        </form>}
 
         {/* Badge prova gratuita */}
         {mode === "signup" && (
@@ -231,6 +307,23 @@ export default function Auth() {
                 dmfootballservices.it
               </a>
             </span>
+          </div>
+        )}
+
+        {mode === "signin" && (
+          <div style={{ marginTop: 10, textAlign: "center" }}>
+            <button
+              type="button"
+              onClick={forgotPassword}
+              disabled={busy}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                color: "hsl(var(--gray))", fontSize: 12,
+                textDecoration: "underline", fontFamily: "'Barlow', sans-serif",
+              }}
+            >
+              Password dimenticata?
+            </button>
           </div>
         )}
 

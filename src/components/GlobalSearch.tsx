@@ -22,7 +22,7 @@ const NAV_ITEMS = [
   { label: "Esplora", path: "/browse", keywords: "browse altri scout" },
   { label: "Account", path: "/account", keywords: "profilo settings" },
   { label: "Aggiungi Report", path: "/add-report", keywords: "nuovo report scouting" },
-  { label: "AI Report", path: "/ai-report", keywords: "intelligenza artificiale" },
+  { label: "Report Auto", path: "/ai-report", keywords: "intelligenza artificiale report automatico" },
   { label: "Richieste accesso", path: "/requests", keywords: "access requests" },
 ];
 

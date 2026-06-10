@@ -80,8 +80,9 @@ export default function Unlocked() {
               e verdetto sono ora visibili: apri il report direttamente da qui.
             </p>
           </div>
-          <div className="flex gap-2 whitespace-nowrap">
+          <div className="flex gap-2 whitespace-nowrap flex-wrap">
             <Link to="/marketplace" className="dm-btn-outline">← Marketplace</Link>
+            <Link to="/purchases" className="dm-btn-outline">💳 Acquisti</Link>
             <Link to="/requests" className="dm-btn-outline">📨 Richieste</Link>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import Logo from "@/components/Logo";
 
@@ -14,7 +14,7 @@ const FEATURES = [
   "Heatmap di posizione e profilo completo",
   "Export PDF e CSV di ogni scheda",
   "Marketplace con accesso giocatori",
-  "Report AI assistito",
+  "Report assistito automaticamente",
   "Confronto giocatori side-by-side",
   "Mappa geografica giocatori",
   "Squad builder e match planner",
@@ -37,8 +37,15 @@ function buildStripeUrl(base: string | undefined, email: string | null): string 
 
 export default function PianoScaduto() {
   const [params] = useSearchParams();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const [annuale, setAnnuale] = useState(false);
+
+  useEffect(() => {
+    if (!loading && user?.email === "dimuropaolo77@gmail.com") {
+      navigate("/", { replace: true });
+    }
+  }, [user, loading, navigate]);
 
   const motivo = params.get("motivo") ?? "inactive";
   const email = params.get("email") ?? user?.email ?? null;

@@ -273,7 +273,7 @@ function dedupPlayers(list: Player[]): Player[] {
   return list.filter((p) => {
     const key = `${(p.name || "").trim().toLowerCase()}|${p.birth_year ?? ""}`;
     if (seen.has(key)) return false;
-    seen.set(key);
+    seen.add(key);
     return true;
   });
 }

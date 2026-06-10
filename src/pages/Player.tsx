@@ -1,4 +1,5 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import PageShell from "@/components/PageShell";
 import { usePlayers } from "@/lib/usePlayers";
 import { getPlayer, savePlayer, setCompareSeed } from "@/lib/storage";
@@ -15,7 +16,9 @@ import VideoGallery from "@/components/VideoGallery";
 import StatsDisplay from "@/components/StatsDisplay";
 import { buildShareLink } from "@/lib/share";
 import { playerToCsv, downloadCsv, safeFilename } from "@/lib/csvExport";
+import { generatePlayerPDF } from "@/lib/generatePlayerPDF";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 import type { Observation } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -27,6 +30,53 @@ export default function Player() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isOwner = !!player && !!user && player.owner_id === user.id;
+
+  // ── Marketplace listing state (solo owner) ────────────────────────────────
+  const [listing, setListing] = useState<{ id: string; price: number; is_active: boolean } | null>(null);
+  const [listingLoaded, setListingLoaded] = useState(false);
+  const [listingPrice, setListingPrice] = useState<string>("0");
+  const [listingActive, setListingActive] = useState(false);
+  const [listingSaving, setListingSaving] = useState(false);
+
+  useEffect(() => {
+    if (!isOwner || !id) return;
+    supabase.from("marketplace_listings" as any).select("id, price, is_active").eq("player_id", id).maybeSingle()
+      .then(({ data }: any) => {
+        if (data) {
+          setListing(data);
+          setListingPrice(String(data.price));
+          setListingActive(data.is_active);
+        }
+        setListingLoaded(true);
+      });
+  }, [isOwner, id]);
+
+  const saveListing = async () => {
+    if (!user || !player) return;
+    const price = parseFloat(listingPrice);
+    if (isNaN(price) || price < 0) { toast.error("Prezzo non valido"); return; }
+    setListingSaving(true);
+    if (listing) {
+      const { error } = await supabase.from("marketplace_listings" as any).update({
+        price: parseFloat(price.toFixed(2)),
+        is_active: listingActive,
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", listing.id);
+      if (error) { toast.error(error.message); setListingSaving(false); return; }
+      setListing({ ...listing, price, is_active: listingActive });
+    } else {
+      const { data, error } = await supabase.from("marketplace_listings" as any).insert({
+        player_id: player.id,
+        owner_id: user.id,
+        price: parseFloat(price.toFixed(2)),
+        is_active: listingActive,
+      } as any).select("id, price, is_active").single();
+      if (error) { toast.error(error.message); setListingSaving(false); return; }
+      setListing(data as any);
+    }
+    toast.success("Listing aggiornato ✓");
+    setListingSaving(false);
+  };
 
   if (!player) {
     return (
@@ -358,6 +408,82 @@ export default function Player() {
         <SimilarPlayers target={player} pool={players} />
       </section>
 
+      {/* Marketplace: gestione listing (solo owner) */}
+      {isOwner && listingLoaded && (
+        <section className="container pb-10">
+          <div className="dm-card p-6">
+            <div className="flex items-center justify-between flex-wrap gap-4 mb-5">
+              <div>
+                <div className="section-label mb-1">// MARKETPLACE · METTI IN VENDITA</div>
+                <p className="text-sm text-gray-soft">
+                  Pubblica questo report nel Marketplace. Imposta un prezzo: altri scout potranno acquistarlo.
+                  DMScout trattiene il <span className="text-foreground font-semibold">10%</span> su ogni vendita come commissione.
+                  Prezzo 0 = accesso gratuito.
+                </p>
+              </div>
+              {listing?.is_active && (
+                <span className="px-3 py-1 bg-accent-lime/20 text-accent-lime font-mono text-[10px] uppercase tracking-[0.12rem]">
+                  In vendita
+                </span>
+              )}
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-4 items-end">
+              <div className="sm:col-span-1">
+                <label className="block text-[10px] font-mono uppercase tracking-[0.12rem] text-gray-soft mb-1">
+                  Prezzo (€) — 0 = Gratis
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.50"
+                  value={listingPrice}
+                  onChange={(e) => setListingPrice(e.target.value)}
+                  className="dm-input w-full"
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="sm:col-span-1 flex items-center gap-3 pb-1">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <div
+                    onClick={() => setListingActive((v) => !v)}
+                    className={`w-10 h-5 rounded-full transition-colors cursor-pointer border ${
+                      listingActive ? "bg-accent-lime border-accent-lime" : "bg-gray-light/30 border-gray-soft/30"
+                    } relative`}
+                  >
+                    <span className={`absolute top-0.5 w-4 h-4 bg-background rounded-full transition-transform border-hairline ${listingActive ? "translate-x-5" : "translate-x-0.5"}`} />
+                  </div>
+                  <span className="text-sm">{listingActive ? "Attivo nel Marketplace" : "Non pubblicato"}</span>
+                </label>
+              </div>
+              <div className="sm:col-span-1">
+                <button
+                  onClick={saveListing}
+                  disabled={listingSaving}
+                  className="dm-btn-primary w-full"
+                >
+                  {listingSaving ? "Salvataggio…" : listing ? "Aggiorna listing" : "Pubblica nel Marketplace"}
+                </button>
+              </div>
+            </div>
+
+            {listing && (
+              <div className="mt-4 pt-4 border-hairline-t text-xs text-gray-soft grid sm:grid-cols-3 gap-2">
+                <div>Prezzo attuale: <span className="text-foreground font-semibold">
+                  {listing.price === 0 ? "Gratis" : `€${listing.price.toFixed(2)}`}
+                </span></div>
+                <div>Ricavo netto (90%): <span className="text-accent-lime font-semibold">
+                  {listing.price === 0 ? "—" : `€${(listing.price * 0.9).toFixed(2)}`}
+                </span></div>
+                <div>Commissione DMScout: <span className="text-gray-soft">
+                  {listing.price === 0 ? "—" : `€${(listing.price * 0.1).toFixed(2)}`}
+                </span></div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       <section className="container pb-16 flex flex-wrap items-center justify-between gap-3">
         <Link to="/database" className="dm-btn-outline">← Database</Link>
         <div className="flex flex-wrap gap-2">
@@ -374,7 +500,15 @@ export default function Player() {
             title="Genera un link autonomo che chiunque può aprire senza accesso"
           >🔗 Condividi</button>
           <button
-            onClick={() => window.open(`/player-print?id=${player.id}`, "_blank", "noopener")}
+            onClick={async () => {
+              toast.info("Generazione PDF in corso…");
+              try {
+                await generatePlayerPDF(player);
+                toast.success("PDF scaricato ✓");
+              } catch (e: any) {
+                toast.error(e?.message || "Errore generazione PDF");
+              }
+            }}
             className="dm-btn-outline"
           >⬇ Scarica PDF</button>
           <button
@@ -390,6 +524,25 @@ export default function Player() {
             className="dm-btn-outline"
             title="Esporta scheda completa, statistiche e verdetto in CSV"
           >📊 Esporta CSV</button>
+          <button
+            onClick={() => {
+              try {
+                const json = JSON.stringify(player, null, 2);
+                const blob = new Blob([json], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `dmscout-${safeFilename(player.name)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                toast.success("JSON esportato ✓");
+              } catch (e: any) {
+                toast.error(e?.message || "Esportazione JSON fallita");
+              }
+            }}
+            className="dm-btn-outline"
+            title="Esporta scheda completa in formato JSON"
+          >&#123;&#125; Esporta JSON</button>
           <Link to={`/edit-report?id=${player.id}`} className="dm-btn-outline">✏ Modifica</Link>
           <button
             onClick={() => { setCompareSeed(player.id); navigate("/compare"); }}

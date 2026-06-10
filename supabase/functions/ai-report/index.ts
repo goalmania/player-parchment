@@ -6,40 +6,34 @@ const corsHeaders = {
 };
 
 const SYSTEM_PROMPT = `Sei un capo scout esperto della Serie D / Eccellenza / Promozione italiana.
-Ricevi le osservazioni libere di uno scout (o un report PDF/DOCX/TXT InStat/Wyscout/FBref/club) e DEVI restituire un report COMPLETO chiamando la funzione \`extract_player_report\`.
+Ricevi le osservazioni di uno scout e rispondi SOLO con un oggetto JSON valido contenente il report completo del giocatore.
 
-REGOLE TASSATIVE:
-1. NON puoi rispondere con testo libero. Solo tool call.
-2. DEVI compilare TUTTI i campi obbligatori: anagrafica, posizione, almeno 2 ruoli tattici (formation + role + role_code + fit_score 0-100), tutti i rating 0-10, tutte le 10 skills 0-100, tutte le 5 stelle 1-5, mercato, almeno 2 tag, verdict_type, verdetto testuale (2-4 frasi), summary (3-5 frasi), almeno 3 strengths e 2 weaknesses, heatmap_zones e formations_played.
-3. Per i campi non esplicitamente menzionati nel testo, deduci valori PLAUSIBILI per la categoria (Serie D / Eccellenza / Promozione). Non lasciare mai array vuoti o stringhe vuote sui campi obbligatori.
-4. Coerenza interna obbligatoria:
-   - overall = round( technical*0.25 + tactical*0.30 + physical*0.20 + mental*0.25, 1 )
-   - se verdict_type = "buy" → almeno un tag tra HIGH POTENTIAL / READY / TOP PROSPECT
-   - se verdict_type = "pass" → tag MONITOR o RISKY
-   - position_code, position_main e role_code dei tactical_roles devono essere coerenti
-5. role_code DEVE essere uno dei valori dell'enum.
-6. tag DEVONO essere scelti SOLO da: HIGH POTENTIAL, LOW COST, READY, MONITOR, RISKY, TOP PROSPECT.
-7. heatmap_zones è un array di zone calde del campo (top-down, vista dello scout). Ogni zona ha row 0-5 (0 = porta avversaria, 5 = porta propria), col 0-9 (0 = sinistra, 9 = destra) e intensity 1-100.
-   Restituisci 4-8 zone che riflettano dove il giocatore opera di più dato il suo ruolo e quanto descritto nel testo.
-8. formations_played: array di moduli (es. "4-3-3", "3-5-2") in cui il giocatore è stato osservato rendere bene.
-9. summary, verdict, strengths e weaknesses devono essere in italiano scoutistico professionale, mai generici.
-10. Se non viene fornita la regione, usa "Puglia" come default.
-11. STATISTICHE — molto importante:
-    - Se il testo è un report PDF/DOCX di InStat/Wyscout/FBref/scheda club, ESTRAI ogni statistica che riconosci e popola l'oggetto \`stats\`.
-    - Mappa i nomi originali (InStat/Wyscout/FBref) alle chiavi DM Scout. Esempi:
-      "Matches played" → matches; "Minutes played" → minutes; "Goals" → goals; "Assists" → assists;
-      "xG" → xg; "xA" → xa; "Shots" → shots; "Shots on target" → shots_on_target; "Shot accuracy, %" → shots_on_target_pct;
-      "Pass accuracy, %" / "Cmp%" → pass_accuracy; "Key passes" → key_passes; "Crosses" → crosses;
-      "Successful dribbles, %" / "Succ%" → dribble_success; "Progressive runs" → progressive_carries; "Progressive passes" → progressive_passes;
-      "Tackles" → tackles; "Interceptions" → interceptions; "Aerial duels won, %" → aerial_duel_success;
-      "Yellow cards" → yellow_cards; "Red cards" → red_cards; "InStat Index" → instat_index; "Average rating" → avg_rating.
-    - **REGOLA CRUCIALE — ULTIMA PARTITA**: tutte le metriche relative alla SINGOLA partita più recente (sezioni come "Last match", "Ultima partita", "Match stats", "Per match", "vs <avversario>", "Match: …", "Game: …", una tabella con UNA sola riga di partita, oppure un riepilogo che si riferisce esplicitamente a un singolo incontro) DEVONO essere salvate con il prefisso \`m_\` (es. m_goals, m_assists, m_shots, m_shots_on_target, m_xg, m_xa, m_passes, m_passes_completed, m_pass_accuracy, m_key_passes, m_crosses, m_dribbles, m_dribbles_completed, m_dribble_success, m_progressive_carries, m_progressive_passes, m_touches, m_touches_in_box, m_tackles, m_tackles_won, m_interceptions, m_blocks, m_clearances, m_duels_total, m_duels_won, m_aerial_duels_total, m_aerial_duels_won, m_fouls_committed, m_fouls_drawn, m_offsides, m_distance_km, m_sprints, m_high_intensity_runs, m_top_speed_kmh, m_avg_speed_kmh, m_rating, m_minutes, m_yellow_cards, m_red_cards, m_saves, m_saves_inside_box, m_saves_outside_box, m_goals_conceded, m_clean_sheet, m_punches, m_high_claims, m_sweeper_actions).
-    - Le metriche STAGIONALI (totali, medie, "/90", "per match" calcolato sulla stagione, "Season totals", "2024/25" cumulativo) NON usano il prefisso m_.
-    - Se il documento contiene SIA stagione SIA ultima partita, popola ENTRAMBI: chiavi senza prefisso per la stagione, chiavi con \`m_\` per la partita.
-    - Se il documento contiene SOLO la singola partita, popola SOLO le chiavi \`m_\` (non duplicare nelle chiavi stagionali).
-    - Tutti i valori devono essere numerici (no stringhe, no "%"). Le percentuali vanno espresse come numero 0–100.
-    - NON inventare valori statistici: se una statistica non è nel testo, OMETTILA dall'oggetto stats.
-    - Se riconosci la fonte, compila \`stats_source\` (es. "InStat", "Wyscout", "FBref"). Se trovi la stagione, compila \`stats_season\` (es. "2024/25").`;
+CAMPI OBBLIGATORI del JSON:
+- name (string), age (intero), birth_year (intero), nationality (string), flag (emoji), club (string), league (string), region (string, default "Puglia"), lat (number), lng (number)
+- position_main (string), position_code (uno tra: GK CB LB RB CDM CM CAM LW RW ST CF), position_secondary (array di stringhe), foot (Destro/Sinistro/Entrambi)
+- height (intero cm, es. 183 NON 1.83), weight (intero kg)
+- tactical_roles: array di oggetti {formation, role, role_code, fit_score 0-100}. role_code tra: GK_SWEEPER, GK_SHOT_STOPPER, CB_BALL_PLAYING, CB_STOPPER, CB_LIBERO, RB_WING_BACK, RB_INVERTED, RB_CLASSIC, LB_WING_BACK, LB_INVERTED, LB_CLASSIC, CDM_SCREEN, CDM_BOX_TO_BOX, CM_REGISTA, CM_BOX, CM_MEZZALA_OFF, CM_MEZZALA_DEF, CAM_TREQUARTISTA, CAM_SHADOW, LW_WINGER, LW_INVERTED, RW_WINGER, RW_INVERTED, ST_TARGET, ST_PRESSING, CF_FALSE_9, CF_SECONDA_PUNTA
+- formations_played: array di stringhe (es. ["4-3-3","3-5-2"])
+- ratings: {technical, tactical, physical, mental, overall} tutti 0-10. overall = technical*0.25 + tactical*0.30 + physical*0.20 + mental*0.25
+- skills: {ball_control, passing, dribbling, finishing, defensive_work, tactical_iq, decision_making, aerial, pace, stamina} tutti 0-100
+- stars: {technique, athleticism, mentality, potential, market_value} tutti 1-5
+- market: {value_min (intero €), value_max (intero €), potential (Alto/Medio-Alto/Medio/Basso), risk (Basso/Medio/Alto), timeline (string), ready_level (string)}
+- tags: array con valori SOLO da: HIGH POTENTIAL, LOW COST, READY, MONITOR, RISKY, TOP PROSPECT
+- verdict_type: buy/monitor/pass
+- verdict: 2-4 frasi in italiano scoutistico
+- observation_type: Video/Dal vivo/Video + Dal vivo
+- observation_count: intero
+- date: YYYY-MM-DD (oggi se non specificata)
+- strengths: array di almeno 3 stringhe in italiano
+- weaknesses: array di almeno 2 stringhe in italiano
+- summary: 3-5 frasi in italiano scoutistico
+- heatmap_zones: array di oggetti {row 0-5, col 0-9, intensity 1-100} che indicano le zone di campo più frequentate
+- stats: oggetto con statistiche numeriche estratte dal testo (solo quelle presenti, non inventare). Es: {goals:5, assists:3, minutes:900}
+
+REGOLE:
+- Per campi non menzionati, deduci valori plausibili per la categoria (Serie D/Eccellenza italiana)
+- Non lasciare mai array vuoti per i campi obbligatori
+- Rispondi SOLO con il JSON, nessun testo aggiuntivo`;
 
 const TOOL = {
   type: "function",
@@ -70,8 +64,6 @@ const TOOL = {
         weight: { type: "number" },
         tactical_roles: {
           type: "array",
-          minItems: 2,
-          maxItems: 4,
           items: {
             type: "object",
             properties: {
@@ -93,118 +85,83 @@ const TOOL = {
               },
               fit_score: { type: "number", minimum: 0, maximum: 100 },
             },
-            required: ["formation", "role", "role_code", "fit_score"],
           },
         },
-        formations_played: {
-          type: "array",
-          items: { type: "string" },
-          description: "Moduli in cui il giocatore ha reso bene",
-        },
+        formations_played: { type: "array", items: { type: "string" } },
         ratings: {
           type: "object",
           properties: {
-            technical: { type: "number", minimum: 0, maximum: 10 },
-            tactical: { type: "number", minimum: 0, maximum: 10 },
-            physical: { type: "number", minimum: 0, maximum: 10 },
-            mental: { type: "number", minimum: 0, maximum: 10 },
-            overall: { type: "number", minimum: 0, maximum: 10 },
+            technical: { type: "number" },
+            tactical: { type: "number" },
+            physical: { type: "number" },
+            mental: { type: "number" },
+            overall: { type: "number" },
           },
-          required: ["technical", "tactical", "physical", "mental", "overall"],
         },
         skills: {
           type: "object",
           properties: {
-            ball_control: { type: "number", minimum: 0, maximum: 100 },
-            passing: { type: "number", minimum: 0, maximum: 100 },
-            dribbling: { type: "number", minimum: 0, maximum: 100 },
-            finishing: { type: "number", minimum: 0, maximum: 100 },
-            defensive_work: { type: "number", minimum: 0, maximum: 100 },
-            tactical_iq: { type: "number", minimum: 0, maximum: 100 },
-            decision_making: { type: "number", minimum: 0, maximum: 100 },
-            aerial: { type: "number", minimum: 0, maximum: 100 },
-            pace: { type: "number", minimum: 0, maximum: 100 },
-            stamina: { type: "number", minimum: 0, maximum: 100 },
+            ball_control: { type: "number" },
+            passing: { type: "number" },
+            dribbling: { type: "number" },
+            finishing: { type: "number" },
+            defensive_work: { type: "number" },
+            tactical_iq: { type: "number" },
+            decision_making: { type: "number" },
+            aerial: { type: "number" },
+            pace: { type: "number" },
+            stamina: { type: "number" },
           },
-          required: [
-            "ball_control", "passing", "dribbling", "finishing", "defensive_work",
-            "tactical_iq", "decision_making", "aerial", "pace", "stamina",
-          ],
         },
         stars: {
           type: "object",
           properties: {
-            technique: { type: "number", minimum: 1, maximum: 5 },
-            athleticism: { type: "number", minimum: 1, maximum: 5 },
-            mentality: { type: "number", minimum: 1, maximum: 5 },
-            potential: { type: "number", minimum: 1, maximum: 5 },
-            market_value: { type: "number", minimum: 1, maximum: 5 },
+            technique: { type: "number" },
+            athleticism: { type: "number" },
+            mentality: { type: "number" },
+            potential: { type: "number" },
+            market_value: { type: "number" },
           },
-          required: ["technique", "athleticism", "mentality", "potential", "market_value"],
         },
         market: {
           type: "object",
           properties: {
             value_min: { type: "number" },
             value_max: { type: "number" },
-            potential: { type: "string", enum: ["Alto", "Medio-Alto", "Medio", "Basso"] },
-            risk: { type: "string", enum: ["Basso", "Medio", "Alto"] },
+            potential: { type: "string" },
+            risk: { type: "string" },
             timeline: { type: "string" },
             ready_level: { type: "string" },
           },
-          required: ["value_min", "value_max", "potential", "risk", "timeline", "ready_level"],
         },
-        tags: {
-          type: "array",
-          minItems: 1,
-          items: {
-            type: "string",
-            enum: ["HIGH POTENTIAL", "LOW COST", "READY", "MONITOR", "RISKY", "TOP PROSPECT"],
-          },
-        },
-        verdict_type: { type: "string", enum: ["buy", "monitor", "pass"] },
-        verdict: { type: "string", description: "2-4 frasi di verdetto operativo" },
-        observation_type: { type: "string", enum: ["Video", "Dal vivo", "Video + Dal vivo"] },
+        tags: { type: "array", items: { type: "string" } },
+        verdict_type: { type: "string" },
+        verdict: { type: "string" },
+        observation_type: { type: "string" },
         observation_count: { type: "number" },
-        date: { type: "string", description: "YYYY-MM-DD" },
-        strengths: { type: "array", minItems: 3, items: { type: "string" } },
-        weaknesses: { type: "array", minItems: 2, items: { type: "string" } },
-        summary: { type: "string", description: "3-5 frasi di analisi tattica" },
+        date: { type: "string" },
+        strengths: { type: "array", items: { type: "string" } },
+        weaknesses: { type: "array", items: { type: "string" } },
+        summary: { type: "string" },
         heatmap_zones: {
           type: "array",
-          minItems: 4,
-          maxItems: 12,
-          description: "Zone calde del campo dove opera il giocatore",
           items: {
             type: "object",
             properties: {
-              row: { type: "number", minimum: 0, maximum: 5 },
-              col: { type: "number", minimum: 0, maximum: 9 },
-              intensity: { type: "number", minimum: 1, maximum: 100 },
+              row: { type: "number" },
+              col: { type: "number" },
+              intensity: { type: "number" },
             },
-            required: ["row", "col", "intensity"],
           },
         },
-        stats_source: {
-          type: "string",
-          description: "Fonte delle statistiche (es. 'InStat', 'Wyscout', 'FBref', 'PDF report club', 'Transfermarkt'). Solo se desumibile dal testo o dal documento caricato.",
-        },
-        stats_season: {
-          type: "string",
-          description: "Stagione di riferimento delle statistiche, es. '2024/25' o '2025'. Solo se presente nel testo.",
-        },
+        stats_source: { type: "string" },
+        stats_season: { type: "string" },
         stats: {
           type: "object",
-          description: "Statistiche stagionali e/o ultima partita estratte dal testo. Compila SOLO i campi presenti o chiaramente desumibili (NON inventare numeri). Usa le chiavi InStat/Wyscout/FBref tradotte alle chiavi DM Scout. Le metriche dell'ultima partita usano il prefisso 'm_' (es. m_goals, m_passes, m_pass_accuracy).",
-          additionalProperties: { type: "number" },
+          description: "Statistiche numeriche estratte dal testo (goals, assists, minutes, ecc.)",
         },
       },
-      required: [
-        "name", "age", "birth_year", "nationality", "flag", "position_main", "position_code",
-        "foot", "height", "weight", "tactical_roles", "formations_played", "ratings", "skills",
-        "stars", "market", "tags", "verdict_type", "verdict", "observation_type",
-        "observation_count", "date", "strengths", "weaknesses", "summary", "heatmap_zones",
-      ],
+      required: ["name", "ratings", "skills", "stars", "market", "tags", "verdict_type", "verdict", "summary"],
     },
   },
 };
@@ -216,9 +173,6 @@ function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
-/**
- * Convert AI heatmap_zones array to a flat 6x10 heatmap with soft bleed on neighbors.
- */
 function zonesToHeatmap(zones: { row: number; col: number; intensity: number }[]): number[] {
   const out = new Array(HEATMAP_ROWS * HEATMAP_COLS).fill(0);
   if (!Array.isArray(zones)) return out;
@@ -244,8 +198,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const { text, name, club } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not set");
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+    if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
 
     const matchHints = /last\s+match|ultima\s+partita|match\s+stats|per\s+match\b|match\s*report|game\s+stats|vs\.?\s+[A-Z]|\bmatch:\s|\bgame:\s/i.test(text || "");
     const userMsg = `NOME GIOCATORE (suggerimento): ${name || "non specificato"}
@@ -260,60 +214,117 @@ ${text}
 
 Compila ORA il report completo chiamando extract_player_report. Non scrivere altro testo.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userMsg },
-        ],
-        tools: [TOOL],
-        tool_choice: { type: "function", function: { name: "extract_player_report" } },
-      }),
-    });
+    const GROQ_KEY = Deno.env.get("GROQ_API_KEY");
+    const GEMINI_KEY = Deno.env.get("GEMINI_API_KEY");
+    const RETRYABLE = new Set([429, 500, 502, 503, 504]);
 
-    if (response.status === 429) {
-      return new Response(JSON.stringify({ error: "Limite di richieste superato. Riprova tra qualche secondo." }), {
-        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // All available free Groq models — tried in order
+    const GROQ_MODELS = [
+      "llama-3.3-70b-versatile",
+      "llama-3.1-70b-versatile",
+      "llama3-70b-8192",
+      "mixtral-8x7b-32768",
+      "llama3-8b-8192",
+      "llama-3.1-8b-instant",
+      "gemma2-9b-it",
+    ];
+
+    const callGroq = (model: string) =>
+      fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${GROQ_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: userMsg },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.3,
+        }),
       });
-    }
-    if (response.status === 402) {
-      return new Response(JSON.stringify({ error: "Credito AI esaurito. Aggiungi credito al workspace Lovable." }), {
-        status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (!response.ok) {
-      const t = await response.text();
-      console.error("Gateway error", response.status, t);
-      return new Response(JSON.stringify({ error: "Errore AI gateway" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+
+    const callGemini = () =>
+      fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: SYSTEM_PROMPT + "\n\n" + userMsg }] }],
+            generationConfig: { temperature: 0.3, responseMimeType: "application/json" },
+          }),
+        }
+      );
+
+    // Try every Groq model with 2 retries each, then fall back to Gemini
+    let rawText: string | null = null;
+
+    if (GROQ_KEY) {
+      outer: for (const model of GROQ_MODELS) {
+        for (let attempt = 0; attempt < 2; attempt++) {
+          if (attempt > 0) await new Promise((r) => setTimeout(r, 800));
+          try {
+            const r = await callGroq(model);
+            if (r.ok) {
+              const data = await r.json();
+              rawText = data.choices?.[0]?.message?.content ?? null;
+              if (rawText) break outer;
+            } else if (!RETRYABLE.has(r.status)) {
+              break; // non-retryable error for this model, try next model
+            }
+            console.warn(`Groq ${model} attempt ${attempt + 1} -> ${r.status}`);
+          } catch (e) {
+            console.warn(`Groq ${model} attempt ${attempt + 1} fetch error`, e);
+          }
+        }
+      }
     }
 
-    const data = await response.json();
-    const call = data.choices?.[0]?.message?.tool_calls?.[0];
-    if (!call) {
-      return new Response(JSON.stringify({ error: "Nessun risultato strutturato dall'AI. Riprova con più dettagli." }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // Gemini fallback — free tier, 1500 req/day
+    if (!rawText && GEMINI_KEY) {
+      console.warn("All Groq models failed, falling back to Gemini");
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 1000 * attempt));
+        try {
+          const r = await callGemini();
+          if (r.ok) {
+            const data = await r.json();
+            rawText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
+            if (rawText) break;
+          }
+          console.warn(`Gemini attempt ${attempt + 1} -> ${r.status}`);
+        } catch (e) {
+          console.warn(`Gemini attempt ${attempt + 1} fetch error`, e);
+        }
+      }
+    }
+
+    if (!rawText) {
+      console.error("All providers failed");
+      return new Response(
+        JSON.stringify({ error: "Servizio AI temporaneamente non disponibile. Riprova tra qualche secondo." }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!rawText) {
+      return new Response(JSON.stringify({ error: "Nessun risultato dall'AI. Riprova con più dettagli." }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     let parsed: any;
     try {
-      parsed = JSON.parse(call.function.arguments);
+      parsed = JSON.parse(rawText);
     } catch (err) {
-      console.error("Bad JSON from tool call", err, call.function.arguments);
-      return new Response(JSON.stringify({ error: "Risposta AI non valida (JSON malformato)." }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      console.error("Bad JSON from Groq", err, rawText.slice(0, 200));
+      return new Response(JSON.stringify({ error: "Risposta AI non valida." }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Convert heatmap_zones into the flat 6x10 array used by the frontend.
     const heatmap = zonesToHeatmap(parsed.heatmap_zones || []);
 
-    // Sanitize stats: only finite numbers, drop everything else.
     let cleanStats: Record<string, number> = {};
     if (parsed.stats && typeof parsed.stats === "object") {
       for (const [k, v] of Object.entries(parsed.stats)) {
@@ -322,9 +333,6 @@ Compila ORA il report completo chiamando extract_player_report. Non scrivere alt
       }
     }
 
-    // Safety net: se il documento è chiaramente di una singola partita ma
-    // l'AI ha popolato solo chiavi senza prefisso, le rimappiamo a m_ così che
-    // le statistiche dell'ultima partita finiscano sempre nel posto giusto.
     const hasMKeys = Object.keys(cleanStats).some((k) => k.startsWith("m_"));
     if (matchHints && !hasMKeys && Object.keys(cleanStats).length > 0) {
       const remapped: Record<string, number> = {};
@@ -343,7 +351,16 @@ Compila ORA il report completo chiamando extract_player_report. Non scrivere alt
     };
     delete player.heatmap_zones;
 
-    // Recompute overall to enforce the documented formula.
+    // Convert height/weight if Gemini returned them in wrong units
+    if (player.height && player.height < 3) player.height = Math.round(player.height * 100);
+    if (player.weight && player.weight < 3) player.weight = Math.round(player.weight * 100);
+    // Ensure integer fields are integers
+    player.height = Math.round(Number(player.height) || 180);
+    player.weight = Math.round(Number(player.weight) || 75);
+    player.age = Math.round(Number(player.age) || 20);
+    player.birth_year = Math.round(Number(player.birth_year) || 2000);
+    player.observation_count = Math.round(Number(player.observation_count) || 1);
+
     if (player.ratings) {
       const r = player.ratings;
       player.ratings = {
