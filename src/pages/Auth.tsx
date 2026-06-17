@@ -86,8 +86,7 @@ export default function Auth() {
         const userId = data.user?.id;
         if (userId) {
           await new Promise(r => setTimeout(r, 500));
-          await supabase
-            .from("profiles")
+          await (supabase.from("profiles" as any) as any)
             .update({
               plan_status: "trial",
               trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
