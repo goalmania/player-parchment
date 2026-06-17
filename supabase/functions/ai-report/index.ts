@@ -198,8 +198,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const { text, name, club } = await req.json();
-    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
-    if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
+    if (!text || typeof text !== "string") {
+      return new Response(JSON.stringify({ error: "Testo del report mancante." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const matchHints = /last\s+match|ultima\s+partita|match\s+stats|per\s+match\b|match\s*report|game\s+stats|vs\.?\s+[A-Z]|\bmatch:\s|\bgame:\s/i.test(text || "");
     const userMsg = `NOME GIOCATORE (suggerimento): ${name || "non specificato"}
@@ -214,113 +217,60 @@ ${text}
 
 Compila ORA il report completo chiamando extract_player_report. Non scrivere altro testo.`;
 
-    const GROQ_KEY = Deno.env.get("GROQ_API_KEY");
-    const GEMINI_KEY = Deno.env.get("GEMINI_API_KEY");
-    const RETRYABLE = new Set([429, 500, 502, 503, 504]);
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY mancante");
 
-    // All available free Groq models — tried in order
-    const GROQ_MODELS = [
-      "llama-3.3-70b-versatile",
-      "llama-3.1-70b-versatile",
-      "llama3-70b-8192",
-      "mixtral-8x7b-32768",
-      "llama3-8b-8192",
-      "llama-3.1-8b-instant",
-      "gemma2-9b-it",
-    ];
+    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userMsg },
+        ],
+        tools: [TOOL],
+        tool_choice: { type: "function", function: { name: "extract_player_report" } },
+        temperature: 0.3,
+      }),
+    });
 
-    const callGroq = (model: string) =>
-      fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${GROQ_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: userMsg },
-          ],
-          response_format: { type: "json_object" },
-          temperature: 0.3,
-        }),
+    if (aiResp.status === 429) {
+      return new Response(JSON.stringify({ error: "Limite richieste AI. Riprova tra poco." }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-
-    const callGemini = () =>
-      fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: SYSTEM_PROMPT + "\n\n" + userMsg }] }],
-            generationConfig: { temperature: 0.3, responseMimeType: "application/json" },
-          }),
-        }
-      );
-
-    // Try every Groq model with 2 retries each, then fall back to Gemini
-    let rawText: string | null = null;
-
-    if (GROQ_KEY) {
-      outer: for (const model of GROQ_MODELS) {
-        for (let attempt = 0; attempt < 2; attempt++) {
-          if (attempt > 0) await new Promise((r) => setTimeout(r, 800));
-          try {
-            const r = await callGroq(model);
-            if (r.ok) {
-              const data = await r.json();
-              rawText = data.choices?.[0]?.message?.content ?? null;
-              if (rawText) break outer;
-            } else if (!RETRYABLE.has(r.status)) {
-              break; // non-retryable error for this model, try next model
-            }
-            console.warn(`Groq ${model} attempt ${attempt + 1} -> ${r.status}`);
-          } catch (e) {
-            console.warn(`Groq ${model} attempt ${attempt + 1} fetch error`, e);
-          }
-        }
-      }
     }
-
-    // Gemini fallback — free tier, 1500 req/day
-    if (!rawText && GEMINI_KEY) {
-      console.warn("All Groq models failed, falling back to Gemini");
-      for (let attempt = 0; attempt < 3; attempt++) {
-        if (attempt > 0) await new Promise((r) => setTimeout(r, 1000 * attempt));
-        try {
-          const r = await callGemini();
-          if (r.ok) {
-            const data = await r.json();
-            rawText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
-            if (rawText) break;
-          }
-          console.warn(`Gemini attempt ${attempt + 1} -> ${r.status}`);
-        } catch (e) {
-          console.warn(`Gemini attempt ${attempt + 1} fetch error`, e);
-        }
-      }
+    if (aiResp.status === 402) {
+      return new Response(JSON.stringify({ error: "Credito AI esaurito." }), {
+        status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
-
-    if (!rawText) {
-      console.error("All providers failed");
-      return new Response(
-        JSON.stringify({ error: "Servizio AI temporaneamente non disponibile. Riprova tra qualche secondo." }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    if (!rawText) {
-      return new Response(JSON.stringify({ error: "Nessun risultato dall'AI. Riprova con più dettagli." }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (!aiResp.ok) {
+      const t = await aiResp.text();
+      console.error("Lovable AI Gateway error", aiResp.status, t.slice(0, 500));
+      return new Response(JSON.stringify({ error: "Errore AI durante la trasformazione del report." }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    const data = await aiResp.json();
+    const msg = data.choices?.[0]?.message;
+    const toolArgs = msg?.tool_calls?.[0]?.function?.arguments;
+    const rawText = toolArgs || msg?.content || "";
     let parsed: any;
     try {
-      parsed = JSON.parse(rawText);
+      parsed = typeof rawText === "string" ? JSON.parse(rawText) : rawText;
     } catch (err) {
-      console.error("Bad JSON from Groq", err, rawText.slice(0, 200));
-      return new Response(JSON.stringify({ error: "Risposta AI non valida." }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const jsonMatch = String(rawText).match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try { parsed = JSON.parse(jsonMatch[0]); } catch {}
+      }
+      if (!parsed) {
+        console.error("Bad JSON from Lovable AI", err, String(rawText).slice(0, 300));
+        return new Response(JSON.stringify({ error: "Risposta AI non valida. Riprova con un PDF più leggibile." }), {
+          status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const heatmap = zonesToHeatmap(parsed.heatmap_zones || []);
