@@ -330,7 +330,7 @@ const COUNTRIES: Record<string, GeoInfo> = {
   "belga": { lat: 50.8, lng: 4.4 }, "bel": { lat: 50.8, lng: 4.4 },
   // Svizzera
   "svizzera": { lat: 46.8, lng: 8.2 }, "switzerland": { lat: 46.8, lng: 8.2 },
-  "svizzero": { lat: 46.8, lng: 8.2 }, "svizzera": { lat: 46.8, lng: 8.2 }, "sui": { lat: 46.8, lng: 8.2 }, "che": { lat: 46.8, lng: 8.2 },
+  "svizzero": { lat: 46.8, lng: 8.2 }, "sui": { lat: 46.8, lng: 8.2 }, "che": { lat: 46.8, lng: 8.2 },
   // Austria
   "austria": { lat: 47.5, lng: 14.5 }, "austriaco": { lat: 47.5, lng: 14.5 }, "aut": { lat: 47.5, lng: 14.5 },
   // Polonia
