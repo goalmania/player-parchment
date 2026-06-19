@@ -6,7 +6,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Player, Observation } from "./types";
 import { heatmapFromPosition } from "@/components/HeatmapEditor";
-import { resolveGeo } from "./geo";
+import { resolveGeo, isItalian } from "./geo";
 
 const COMPARE_KEY = "dmscout_compare_id";
 const AI_DRAFT_KEY = "dmscout_ai_draft";
@@ -165,7 +165,8 @@ function playerToRow(p: Player, ownerId: string) {
 function hydrate(p: Player): Player {
   let next = p;
   // Resolve geo from club/nationality when lat/lng or region are missing
-  const needsGeo = !next.lat || !next.lng || Math.abs(next.lat) < 0.001 || Math.abs(next.lng) < 0.001 || !next.region;
+  const italian = isItalian(next.nationality);
+  const needsGeo = !next.lat || !next.lng || Math.abs(next.lat) < 0.001 || Math.abs(next.lng) < 0.001 || (italian && !next.region);
   if (needsGeo) {
     const geo = resolveGeo({
       club: next.club,
@@ -178,9 +179,14 @@ function hydrate(p: Player): Player {
         ...next,
         lat: (!next.lat || Math.abs(next.lat) < 0.001) ? geo.lat : next.lat,
         lng: (!next.lng || Math.abs(next.lng) < 0.001) ? geo.lng : next.lng,
-        region: next.region || geo.region || "",
+        // Assegna regione solo ai giocatori italiani
+        region: italian ? (next.region || geo.region || "") : "",
       };
     }
+  }
+  // Per i non-italiani, cancella l'eventuale regione italiana già salvata
+  if (!italian && next.region) {
+    next = { ...next, region: "" };
   }
   if (!next.heatmap || next.heatmap.length === 0) {
     next = { ...next, heatmap: heatmapFromPosition(next.position_code) };

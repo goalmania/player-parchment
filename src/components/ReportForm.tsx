@@ -4,6 +4,7 @@ import {
   ALL_TAGS, FORMATIONS, POSITION_CODES, POSITION_LABEL,
   REGIONS, ROLE_OPTIONS_BY_POSITION,
 } from "@/lib/types";
+import { isItalian } from "@/lib/geo";
 import type { Player, PositionCode, Heatmap } from "@/lib/types";
 import { deletePlayer, nextNum, savePlayer } from "@/lib/storage";
 import Stars from "@/components/Stars";
@@ -73,6 +74,12 @@ export default function ReportForm({ initial, mode }: Props) {
   useEffect(() => {
     setData((d) => ({ ...d, ratings: { ...d.ratings, overall: calcOverall(d.ratings) } }));
   }, [data.ratings.technical, data.ratings.tactical, data.ratings.physical, data.ratings.mental]);
+
+  useEffect(() => {
+    if (!isItalian(data.nationality)) {
+      setData((d) => ({ ...d, region: "" }));
+    }
+  }, [data.nationality]);
 
   const update = <K extends keyof Player>(k: K, v: Player[K]) => setData((d) => ({ ...d, [k]: v }));
   const updateRating = (k: keyof Player["ratings"], v: number) => setData((d) => ({ ...d, ratings: { ...d.ratings, [k]: v } }));
@@ -149,11 +156,13 @@ export default function ReportForm({ initial, mode }: Props) {
           <Field label="Liga / Campionato">
             <input className="dm-input" value={data.league} onChange={(e) => update("league", e.target.value)} />
           </Field>
-          <Field label="Regione">
-            <select className="dm-input" value={data.region} onChange={(e) => update("region", e.target.value)}>
-              {REGIONS.map((r) => <option key={r}>{r}</option>)}
-            </select>
-          </Field>
+          {isItalian(data.nationality) && (
+            <Field label="Regione">
+              <select className="dm-input" value={data.region} onChange={(e) => update("region", e.target.value)}>
+                {REGIONS.map((r) => <option key={r}>{r}</option>)}
+              </select>
+            </Field>
+          )}
           <Field label="Anno di nascita">
             <input type="number" min={1995} max={2010} className="dm-input"
               value={data.birth_year}

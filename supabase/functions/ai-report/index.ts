@@ -6,34 +6,30 @@ const corsHeaders = {
 };
 
 const SYSTEM_PROMPT = `Sei un capo scout esperto della Serie D / Eccellenza / Promozione italiana.
-Ricevi le osservazioni di uno scout e rispondi SOLO con un oggetto JSON valido contenente il report completo del giocatore.
+Ricevi le osservazioni libere di uno scout (o un report PDF/DOCX/TXT InStat/Wyscout/FBref/club) e DEVI restituire un report COMPLETO chiamando la funzione \`extract_player_report\`.
 
-CAMPI OBBLIGATORI del JSON:
-- name (string), age (intero), birth_year (intero), nationality (string), flag (emoji), club (string), league (string), region (string, default "Puglia"), lat (number), lng (number)
-- position_main (string), position_code (uno tra: GK CB LB RB CDM CM CAM LW RW ST CF), position_secondary (array di stringhe), foot (Destro/Sinistro/Entrambi)
-- height (intero cm, es. 183 NON 1.83), weight (intero kg)
-- tactical_roles: array di oggetti {formation, role, role_code, fit_score 0-100}. role_code tra: GK_SWEEPER, GK_SHOT_STOPPER, CB_BALL_PLAYING, CB_STOPPER, CB_LIBERO, RB_WING_BACK, RB_INVERTED, RB_CLASSIC, LB_WING_BACK, LB_INVERTED, LB_CLASSIC, CDM_SCREEN, CDM_BOX_TO_BOX, CM_REGISTA, CM_BOX, CM_MEZZALA_OFF, CM_MEZZALA_DEF, CAM_TREQUARTISTA, CAM_SHADOW, LW_WINGER, LW_INVERTED, RW_WINGER, RW_INVERTED, ST_TARGET, ST_PRESSING, CF_FALSE_9, CF_SECONDA_PUNTA
-- formations_played: array di stringhe (es. ["4-3-3","3-5-2"])
-- ratings: {technical, tactical, physical, mental, overall} tutti 0-10. overall = technical*0.25 + tactical*0.30 + physical*0.20 + mental*0.25
-- skills: {ball_control, passing, dribbling, finishing, defensive_work, tactical_iq, decision_making, aerial, pace, stamina} tutti 0-100
-- stars: {technique, athleticism, mentality, potential, market_value} tutti 1-5
-- market: {value_min (intero €), value_max (intero €), potential (Alto/Medio-Alto/Medio/Basso), risk (Basso/Medio/Alto), timeline (string), ready_level (string)}
-- tags: array con valori SOLO da: HIGH POTENTIAL, LOW COST, READY, MONITOR, RISKY, TOP PROSPECT
-- verdict_type: buy/monitor/pass
-- verdict: 2-4 frasi in italiano scoutistico
-- observation_type: Video/Dal vivo/Video + Dal vivo
-- observation_count: intero
-- date: YYYY-MM-DD (oggi se non specificata)
-- strengths: array di almeno 3 stringhe in italiano
-- weaknesses: array di almeno 2 stringhe in italiano
-- summary: 3-5 frasi in italiano scoutistico
-- heatmap_zones: array di oggetti {row 0-5, col 0-9, intensity 1-100} che indicano le zone di campo più frequentate
-- stats: oggetto con statistiche numeriche estratte dal testo (solo quelle presenti, non inventare). Es: {goals:5, assists:3, minutes:900}
-
-REGOLE:
-- Per campi non menzionati, deduci valori plausibili per la categoria (Serie D/Eccellenza italiana)
-- Non lasciare mai array vuoti per i campi obbligatori
-- Rispondi SOLO con il JSON, nessun testo aggiuntivo`;
+REGOLE TASSATIVE:
+1. NON puoi rispondere con testo libero. Solo tool call.
+2. DEVI compilare TUTTI i campi obbligatori: anagrafica, posizione, almeno 2 ruoli tattici (formation + role + role_code + fit_score 0-100), tutti i rating 0-10, tutte le 10 skills 0-100, tutte le 5 stelle 1-5, mercato, almeno 2 tag, verdict_type, verdetto testuale (2-4 frasi), summary (3-5 frasi), almeno 3 strengths e 2 weaknesses, heatmap_zones e formations_played.
+3. Per i campi non esplicitamente menzionati nel testo, deduci valori PLAUSIBILI per la categoria (Serie D / Eccellenza / Promozione). Non lasciare mai array vuoti o stringhe vuote sui campi obbligatori.
+4. Coerenza interna obbligatoria:
+   - overall = round( technical*0.25 + tactical*0.30 + physical*0.20 + mental*0.25, 1 )
+   - se verdict_type = "buy" → almeno un tag tra HIGH POTENTIAL / READY / TOP PROSPECT
+   - se verdict_type = "pass" → tag MONITOR o RISKY
+   - position_code, position_main e role_code dei tactical_roles devono essere coerenti
+5. role_code DEVE essere uno dei valori dell'enum.
+6. tag DEVONO essere scelti SOLO da: HIGH POTENTIAL, LOW COST, READY, MONITOR, RISKY, TOP PROSPECT.
+7. heatmap_zones è un array di zone calde del campo (top-down, vista dello scout). Ogni zona ha row 0-5 (0 = porta avversaria, 5 = porta propria), col 0-9 (0 = sinistra, 9 = destra) e intensity 1-100.
+   Restituisci 4-8 zone che riflettano dove il giocatore opera di più dato il suo ruolo.
+8. formations_played: array di moduli (es. "4-3-3", "3-5-2") in cui il giocatore è stato osservato.
+9. summary, verdict, strengths e weaknesses devono essere in italiano scoutistico professionale, mai generici.
+10. Il campo "region" va compilato SOLO se il giocatore è italiano (nationality = "Italia" o simile). Per giocatori stranieri lascia region come stringa vuota "".
+11. STATISTICHE:
+    - Se il testo è un report di InStat/Wyscout/FBref, estrai ogni statistica e popola l'oggetto stats.
+    - Metriche STAGIONALI → chiavi senza prefisso (goals, assists, minutes, ecc.)
+    - Metriche ULTIMA PARTITA → prefisso m_ (m_goals, m_assists, m_minutes, ecc.)
+    - NON inventare valori statistici: se non è nel testo, ometti.
+    - Tutti i valori devono essere numerici. Le percentuali come numero 0-100.`;
 
 const TOOL = {
   type: "function",
@@ -47,7 +43,7 @@ const TOOL = {
         age: { type: "number", minimum: 14, maximum: 45 },
         birth_year: { type: "number" },
         nationality: { type: "string" },
-        flag: { type: "string", description: "Emoji bandiera, es. 🇮🇹" },
+        flag: { type: "string" },
         club: { type: "string" },
         league: { type: "string" },
         region: { type: "string" },
@@ -67,7 +63,7 @@ const TOOL = {
           items: {
             type: "object",
             properties: {
-              formation: { type: "string", enum: ["4-3-3", "4-2-3-1", "4-4-2", "3-5-2", "3-4-3", "5-3-2", "4-1-4-1"] },
+              formation: { type: "string" },
               role: { type: "string" },
               role_code: {
                 type: "string",
@@ -158,10 +154,15 @@ const TOOL = {
         stats_season: { type: "string" },
         stats: {
           type: "object",
-          description: "Statistiche numeriche estratte dal testo (goals, assists, minutes, ecc.)",
+          additionalProperties: { type: "number" },
         },
       },
-      required: ["name", "ratings", "skills", "stars", "market", "tags", "verdict_type", "verdict", "summary"],
+      required: [
+        "name", "age", "birth_year", "nationality", "flag", "position_main", "position_code",
+        "foot", "height", "weight", "tactical_roles", "formations_played", "ratings", "skills",
+        "stars", "market", "tags", "verdict_type", "verdict", "observation_type",
+        "observation_count", "date", "strengths", "weaknesses", "summary", "heatmap_zones",
+      ],
     },
   },
 };
@@ -182,9 +183,7 @@ function zonesToHeatmap(zones: { row: number; col: number; intensity: number }[]
     const intensity = clamp(z.intensity, 0, 100);
     for (let r = 0; r < HEATMAP_ROWS; r++) {
       for (let c = 0; c < HEATMAP_COLS; c++) {
-        const dr = r - cr;
-        const dc = c - cc;
-        const dist2 = dr * dr + dc * dc;
+        const dist2 = (r - cr) ** 2 + (c - cc) ** 2;
         const v = intensity * Math.exp(-dist2 / 1.8);
         const idx = r * HEATMAP_COLS + c;
         out[idx] = Math.max(out[idx], v);
@@ -198,127 +197,110 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const { text, name, club } = await req.json();
-    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
-    if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not set");
-
-    const matchHints = /last\s+match|ultima\s+partita|match\s+stats|per\s+match\b|match\s*report|game\s+stats|vs\.?\s+[A-Z]|\bmatch:\s|\bgame:\s/i.test(text || "");
-    const userMsg = `NOME GIOCATORE (suggerimento): ${name || "non specificato"}
-CLUB (suggerimento): ${club || "non specificato"}
-DATA OSSERVAZIONE: ${new Date().toISOString().slice(0, 10)}
-INDIZIO: ${matchHints ? "il documento sembra contenere statistiche di una SINGOLA PARTITA — usa il prefisso m_ per quei numeri." : "il documento sembra contenere statistiche STAGIONALI — usa chiavi senza prefisso."}
-
-OSSERVAZIONI DELLO SCOUT (testo libero):
-"""
-${text}
-"""
-
-Compila ORA il report completo chiamando extract_player_report. Non scrivere altro testo.`;
-
-    const GROQ_KEY = Deno.env.get("GROQ_API_KEY");
-    const GEMINI_KEY = Deno.env.get("GEMINI_API_KEY");
-    const RETRYABLE = new Set([429, 500, 502, 503, 504]);
-
-    // All available free Groq models — tried in order
-    const GROQ_MODELS = [
-      "llama-3.3-70b-versatile",
-      "llama-3.1-70b-versatile",
-      "llama3-70b-8192",
-      "mixtral-8x7b-32768",
-      "llama3-8b-8192",
-      "llama-3.1-8b-instant",
-      "gemma2-9b-it",
-    ];
-
-    const callGroq = (model: string) =>
-      fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${GROQ_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: userMsg },
-          ],
-          response_format: { type: "json_object" },
-          temperature: 0.3,
-        }),
-      });
-
-    const callGemini = () =>
-      fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: SYSTEM_PROMPT + "\n\n" + userMsg }] }],
-            generationConfig: { temperature: 0.3, responseMimeType: "application/json" },
-          }),
-        }
-      );
-
-    // Try every Groq model with 2 retries each, then fall back to Gemini
-    let rawText: string | null = null;
-
-    if (GROQ_KEY) {
-      outer: for (const model of GROQ_MODELS) {
-        for (let attempt = 0; attempt < 2; attempt++) {
-          if (attempt > 0) await new Promise((r) => setTimeout(r, 800));
-          try {
-            const r = await callGroq(model);
-            if (r.ok) {
-              const data = await r.json();
-              rawText = data.choices?.[0]?.message?.content ?? null;
-              if (rawText) break outer;
-            } else if (!RETRYABLE.has(r.status)) {
-              break; // non-retryable error for this model, try next model
-            }
-            console.warn(`Groq ${model} attempt ${attempt + 1} -> ${r.status}`);
-          } catch (e) {
-            console.warn(`Groq ${model} attempt ${attempt + 1} fetch error`, e);
-          }
-        }
-      }
-    }
-
-    // Gemini fallback — free tier, 1500 req/day
-    if (!rawText && GEMINI_KEY) {
-      console.warn("All Groq models failed, falling back to Gemini");
-      for (let attempt = 0; attempt < 3; attempt++) {
-        if (attempt > 0) await new Promise((r) => setTimeout(r, 1000 * attempt));
-        try {
-          const r = await callGemini();
-          if (r.ok) {
-            const data = await r.json();
-            rawText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
-            if (rawText) break;
-          }
-          console.warn(`Gemini attempt ${attempt + 1} -> ${r.status}`);
-        } catch (e) {
-          console.warn(`Gemini attempt ${attempt + 1} fetch error`, e);
-        }
-      }
-    }
-
-    if (!rawText) {
-      console.error("All providers failed");
-      return new Response(
-        JSON.stringify({ error: "Servizio AI temporaneamente non disponibile. Riprova tra qualche secondo." }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    if (!rawText) {
-      return new Response(JSON.stringify({ error: "Nessun risultato dall'AI. Riprova con più dettagli." }), {
+    if (!text || text.length < 20) {
+      return new Response(JSON.stringify({ error: "Testo troppo breve per generare un report." }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    let parsed: any;
-    try {
-      parsed = JSON.parse(rawText);
-    } catch (err) {
-      console.error("Bad JSON from Groq", err, rawText.slice(0, 200));
-      return new Response(JSON.stringify({ error: "Risposta AI non valida." }), {
+    const OPENAI_KEY = Deno.env.get("OPENAI_API_KEY");
+    const GEMINI_KEY = Deno.env.get("GEMINI_API_KEY");
+
+    if (!OPENAI_KEY && !GEMINI_KEY) {
+      return new Response(JSON.stringify({ error: "Nessuna chiave AI configurata nel progetto." }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const matchHints = /last\s+match|ultima\s+partita|match\s+stats|per\s+match\b|match\s*report|game\s+stats|vs\.?\s+[A-Z]|\bmatch:\s|\bgame:\s/i.test(text);
+    const userMsg = `NOME GIOCATORE (suggerimento): ${name || "non specificato"}
+CLUB (suggerimento): ${club || "non specificato"}
+DATA OSSERVAZIONE: ${new Date().toISOString().slice(0, 10)}
+INDIZIO: ${matchHints ? "il documento contiene statistiche di una SINGOLA PARTITA — usa il prefisso m_ per quei numeri." : "il documento contiene statistiche STAGIONALI — usa chiavi senza prefisso."}
+
+OSSERVAZIONI DELLO SCOUT:
+"""
+${text}
+"""
+
+Compila ORA il report completo chiamando extract_player_report.`;
+
+    const GROQ_KEY = Deno.env.get("GROQ_API_KEY");
+    let parsed: any = null;
+
+    // Helper: chiama un endpoint compatibile OpenAI con tool calling (timeout 40s)
+    async function callOpenAICompat(url: string, apiKey: string, model: string): Promise<any> {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 40000);
+      try {
+        const r = await fetch(url, {
+          signal: ctrl.signal,
+          method: "POST",
+          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: "system", content: SYSTEM_PROMPT },
+              { role: "user", content: userMsg },
+            ],
+            tools: [TOOL],
+            tool_choice: { type: "function", function: { name: "extract_player_report" } },
+            temperature: 0.3,
+            max_tokens: 4096,
+          }),
+        });
+        if (!r.ok) { console.warn(`${url} error`, r.status, await r.text()); return null; }
+        const d = await r.json();
+        const args = d.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+        if (!args) { console.warn(`${url} no args`, JSON.stringify(d).slice(0, 300)); return null; }
+        return JSON.parse(args);
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    // 1. OpenAI (primary)
+    if (!parsed && OPENAI_KEY) {
+      try { parsed = await callOpenAICompat("https://api.openai.com/v1/chat/completions", OPENAI_KEY, "gpt-4o-mini"); }
+      catch (e) { console.warn("OpenAI error", e); }
+    }
+
+    // 2. GROQ (secondary)
+    if (!parsed && GROQ_KEY) {
+      try { parsed = await callOpenAICompat("https://api.groq.com/openai/v1/chat/completions", GROQ_KEY, "llama-3.3-70b-versatile"); }
+      catch (e) { console.warn("GROQ error", e); }
+    }
+
+    // 3. Gemini (last resort)
+    if (!parsed && GEMINI_KEY) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 40000);
+      try {
+        const geminiPrompt = SYSTEM_PROMPT + "\n\nRispondi SOLO con JSON valido (oggetto con tutti i campi del tool).\n\n" + userMsg;
+        const r = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+          {
+            signal: ctrl.signal,
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: geminiPrompt }] }],
+              generationConfig: { temperature: 0.3, responseMimeType: "application/json" },
+            }),
+          }
+        );
+        if (r.ok) {
+          const d = await r.json();
+          const rawText = d.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (rawText) parsed = JSON.parse(rawText);
+          else console.warn("Gemini no text", JSON.stringify(d).slice(0, 300));
+        } else { console.warn("Gemini error", r.status, await r.text()); }
+      } catch (e) { console.warn("Gemini fetch error", e); }
+      finally { clearTimeout(timer); }
+    }
+
+    if (!parsed) {
+      return new Response(JSON.stringify({ error: "Servizio AI temporaneamente non disponibile. Riprova tra qualche secondo." }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -333,30 +315,22 @@ Compila ORA il report completo chiamando extract_player_report. Non scrivere alt
       }
     }
 
+    // Safety: se documento di singola partita ma l'AI non ha usato m_ prefix, rimappa
     const hasMKeys = Object.keys(cleanStats).some((k) => k.startsWith("m_"));
     if (matchHints && !hasMKeys && Object.keys(cleanStats).length > 0) {
       const remapped: Record<string, number> = {};
-      for (const [k, v] of Object.entries(cleanStats)) {
-        remapped[`m_${k}`] = v;
-      }
+      for (const [k, v] of Object.entries(cleanStats)) remapped[`m_${k}`] = v;
       cleanStats = remapped;
     }
 
-    const player = {
-      ...parsed,
-      heatmap,
-      stats: cleanStats,
-      stats_source: parsed.stats_source || "",
-      stats_season: parsed.stats_season || "",
-    };
+    const player = { ...parsed, heatmap, stats: cleanStats, stats_source: parsed.stats_source || "", stats_season: parsed.stats_season || "" };
     delete player.heatmap_zones;
 
-    // Convert height/weight if Gemini returned them in wrong units
-    if (player.height && player.height < 3) player.height = Math.round(player.height * 100);
-    if (player.weight && player.weight < 3) player.weight = Math.round(player.weight * 100);
-    // Ensure integer fields are integers
+    // Enforce integer fields
     player.height = Math.round(Number(player.height) || 180);
+    if (player.height < 3) player.height = Math.round(player.height * 100);
     player.weight = Math.round(Number(player.weight) || 75);
+    if (player.weight < 3) player.weight = Math.round(player.weight * 100);
     player.age = Math.round(Number(player.age) || 20);
     player.birth_year = Math.round(Number(player.birth_year) || 2000);
     player.observation_count = Math.round(Number(player.observation_count) || 1);
@@ -370,12 +344,13 @@ Compila ORA il report completo chiamando extract_player_report. Non scrivere alt
     }
 
     return new Response(JSON.stringify({ player }), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("ai-report error", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Errore" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Errore interno" }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

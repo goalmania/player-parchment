@@ -380,7 +380,7 @@ function lookupCountry(nationality: string): GeoInfo | null {
   return COUNTRIES[k] || null;
 }
 
-function isItalian(nationality?: string): boolean {
+export function isItalian(nationality?: string): boolean {
   if (!nationality) return false;
   const k = norm(nationality);
   return k === "italia" || k === "italy" || k === "italiana" || k === "italiano" || k === "ita";

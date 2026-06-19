@@ -5,7 +5,7 @@ import { usePlayers } from "@/lib/usePlayers";
 import { TagPill, VerdictBadge } from "@/components/PlayerCard";
 import type { Player } from "@/lib/types";
 import { POSITION_CODES, POSITION_LABEL } from "@/lib/types";
-import { normalizeClubName, normalizeNationality } from "@/lib/geo";
+import { normalizeClubName, normalizeNationality, isItalian } from "@/lib/geo";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster";
@@ -265,7 +265,7 @@ export default function MapPage() {
                   <div className="flex items-center justify-between">
                     <div className="min-w-0">
                       <div className="font-display font-semibold uppercase text-sm truncate">{p.name}</div>
-                      <div className="text-xs text-gray-soft truncate">{p.club} · {p.region}</div>
+                      <div className="text-xs text-gray-soft truncate">{p.club}{isItalian(p.nationality) && p.region ? ` · ${p.region}` : ""}</div>
                     </div>
                     <div className="font-mono text-lg text-accent-lime">{p.ratings.overall.toFixed(1)}</div>
                   </div>
