@@ -38,13 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (uid: string, retries = 4) => {
-    const { data, error } = await supabase
-      .from("profiles")
+    const { data, error } = await (supabase.from("profiles" as any) as any)
       .select("id, user_id, org_type, org_name, display_name, avatar_url, plan_status, trial_ends_at, current_period_end")
       .eq("user_id", uid)
       .maybeSingle();
     if (!error && data) {
-      setProfile(data as Profile);
+      setProfile(data as unknown as Profile);
     } else if (!error && !data && retries > 0) {
       // Profile not yet created by trigger — retry
       setTimeout(() => fetchProfile(uid, retries - 1), 600);

@@ -72,7 +72,7 @@ export default function Account() {
       .select("id, amount, type, description, created_at")
       .order("created_at", { ascending: false })
       .limit(30);
-    setTxs((data || []) as WalletTx[]);
+    setTxs((data || []) as unknown as WalletTx[]);
   };
 
   const loadMyWithdrawals = async () => {
