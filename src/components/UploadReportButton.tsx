@@ -120,8 +120,8 @@ export default function UploadReportButton({ autoSave = true, label }: Props) {
   const navigate = useNavigate();
 
   const onFile = async (file: File) => {
-    if (file.size > 8 * 1024 * 1024) {
-      toast.error("File troppo grande (max 8MB)");
+    if (file.size > 6 * 1024 * 1024) {
+      toast.error("File troppo grande (max 6MB). Comprimi il PDF o usa il pulsante Incolla testo.");
       return;
     }
     setLoading(true);
@@ -178,9 +178,15 @@ export default function UploadReportButton({ autoSave = true, label }: Props) {
         foot: ai.foot || "Destro",
         height: toInt(ai.height, 180, 140, 220),
         weight: toInt(ai.weight, 75, 40, 130),
+        body_type: ai.body_type || "Normolineo",
         tactical_roles: Array.isArray(ai.tactical_roles) ? ai.tactical_roles : [],
         ratings: ai.ratings || { technical: 6, tactical: 6, physical: 6, mental: 6, overall: 6 },
-        skills: ai.skills || { ball_control: 60, passing: 60, dribbling: 60, finishing: 60, defensive_work: 60, tactical_iq: 60, decision_making: 60, aerial: 60, pace: 60, stamina: 60 },
+        skills: {
+          ball_control: 60, passing: 60, dribbling: 60, finishing: 60, defensive_work: 60,
+          tactical_iq: 60, decision_making: 60, aerial: 60, pace: 60, stamina: 60,
+          crossing: 60, heading: 60, marking: 60, vision: 60, work_rate: 60,
+          ...(ai.skills || {}),
+        },
         stars: ai.stars || { technique: 3, athleticism: 3, mentality: 3, potential: 3, market_value: 3 },
         market: ai.market || { value_min: 20000, value_max: 50000, potential: "Medio", risk: "Medio", timeline: "12 mesi", ready_level: "Serie D" },
         tags: Array.isArray(ai.tags) ? ai.tags : [],
@@ -206,7 +212,12 @@ export default function UploadReportButton({ autoSave = true, label }: Props) {
       toast.success(`Report di ${saved.name} creato automaticamente ✓`);
       navigate(`/player?id=${saved.id}`);
     } catch (e: any) {
-      toast.error(e?.message || "Estrazione fallita");
+      const msg = e?.message || "";
+      if (msg.includes("Failed to send") || msg.includes("network") || msg.includes("fetch")) {
+        toast.error("Errore di connessione. Il file potrebbe essere troppo grande o la connessione è instabile.");
+      } else {
+        toast.error(msg || "Estrazione fallita");
+      }
     } finally {
       setLoading(false);
       if (ref.current) ref.current.value = "";

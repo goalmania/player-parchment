@@ -463,6 +463,7 @@ export interface Player {
   foot: "Destro" | "Sinistro" | "Entrambi" | string;
   height: number;
   weight: number;
+  body_type?: "Longilineo" | "Normolineo" | "Brevilineo" | string;
   tactical_roles: TacticalRole[];
   ratings: {
     technical: number;
@@ -482,6 +483,11 @@ export interface Player {
     aerial: number;
     pace: number;
     stamina: number;
+    crossing: number;
+    heading: number;
+    marking: number;
+    vision: number;
+    work_rate: number;
   };
   stars: {
     technique: number;
@@ -647,6 +653,8 @@ export const ROLE_OPTIONS_BY_POSITION: Record<PositionCode, RoleDef[]> = {
 export const ALL_TAGS = [
   "HIGH POTENTIAL","LOW COST","READY","MONITOR","RISKY","TOP PROSPECT",
 ] as const;
+
+export const BODY_TYPES = ["Longilineo", "Normolineo", "Brevilineo"] as const;
 
 export const FORMATIONS = [
   "4-3-3", "4-2-3-1", "4-4-2", "4-3-1-2", "4-1-4-1", "4-5-1",

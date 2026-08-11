@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ALL_TAGS, FORMATIONS, POSITION_CODES, POSITION_LABEL,
+  ALL_TAGS, BODY_TYPES, FORMATIONS, POSITION_CODES, POSITION_LABEL,
   REGIONS, ROLE_OPTIONS_BY_POSITION,
 } from "@/lib/types";
 import { isItalian } from "@/lib/geo";
@@ -22,10 +22,14 @@ const empty: Player = {
   id: "", num: "", name: "", photo: "", age: 20, birth_year: new Date().getFullYear() - 20,
   nationality: "Italia", flag: "🇮🇹", club: "", league: "", region: "Puglia",
   lat: 41.0, lng: 16.5, position_main: POSITION_LABEL.CM, position_code: "CM",
-  position_secondary: [], foot: "Destro", height: 180, weight: 75,
+  position_secondary: [], foot: "Destro", height: 180, weight: 75, body_type: "Normolineo",
   tactical_roles: [],
   ratings: { technical: 6, tactical: 6, physical: 6, mental: 6, overall: 6 },
-  skills: { ball_control: 60, passing: 60, dribbling: 60, finishing: 60, defensive_work: 60, tactical_iq: 60, decision_making: 60, aerial: 60, pace: 60, stamina: 60 },
+  skills: {
+    ball_control: 60, passing: 60, dribbling: 60, finishing: 60, defensive_work: 60,
+    tactical_iq: 60, decision_making: 60, aerial: 60, pace: 60, stamina: 60,
+    crossing: 60, heading: 60, marking: 60, vision: 60, work_rate: 60,
+  },
   stars: { technique: 3, athleticism: 3, mentality: 3, potential: 3, market_value: 3 },
   market: { value_min: 20000, value_max: 50000, potential: "Medio", risk: "Medio", timeline: "12 mesi", ready_level: "Serie D" },
   tags: [], verdict_type: "monitor", verdict: "",
@@ -188,6 +192,11 @@ export default function ReportForm({ initial, mode }: Props) {
           </Field>
           <Field label="Peso (kg)">
             <input type="number" className="dm-input" value={data.weight} onChange={(e) => update("weight", parseInt(e.target.value) || 0)} />
+          </Field>
+          <Field label="Corporatura">
+            <select className="dm-input" value={data.body_type || "Normolineo"} onChange={(e) => update("body_type", e.target.value)}>
+              {BODY_TYPES.map((b) => <option key={b} value={b}>{b}</option>)}
+            </select>
           </Field>
           <Field label="Latitudine">
             <input type="number" step="0.01" className="dm-input" value={data.lat} onChange={(e) => update("lat", parseFloat(e.target.value) || 0)} />
@@ -489,6 +498,7 @@ function skillLabel(k: keyof Player["skills"]) {
     ball_control:"Ball Control", passing:"Passaggio", dribbling:"Dribbling", finishing:"Finalizzazione",
     defensive_work:"Lavoro Difensivo", tactical_iq:"Intelligenza Tattica", decision_making:"Decision Making",
     aerial:"Gioco Aereo", pace:"Velocità", stamina:"Resistenza",
+    crossing:"Cross", heading:"Colpo di Testa", marking:"Marcatura", vision:"Visione di Gioco", work_rate:"Work Rate",
   };
   return m[k];
 }

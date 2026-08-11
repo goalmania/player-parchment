@@ -115,6 +115,9 @@ export default function Player() {
     ["Dribbling", player.skills.dribbling],
     ["Finalizzazione", player.skills.finishing],
     ["Intelligenza Tattica", player.skills.tactical_iq],
+    ["Cross", player.skills.crossing],
+    ["Colpo di Testa", player.skills.heading],
+    ["Marcatura", player.skills.marking],
   ] as const;
   const skillsRight = [
     ["Lavoro Difensivo", player.skills.defensive_work],
@@ -122,6 +125,8 @@ export default function Player() {
     ["Velocità", player.skills.pace],
     ["Resistenza", player.skills.stamina],
     ["Decision Making", player.skills.decision_making],
+    ["Visione di Gioco", player.skills.vision],
+    ["Work Rate", player.skills.work_rate],
   ] as const;
 
   const verdictBox =

@@ -17,6 +17,7 @@ function skillsVec(p: Player): number[] {
     s.ball_control, s.passing, s.dribbling, s.finishing,
     s.defensive_work, s.tactical_iq, s.decision_making,
     s.aerial, s.pace, s.stamina,
+    s.crossing, s.heading, s.marking, s.vision, s.work_rate,
   ];
 }
 function ratingsVec(p: Player): number[] {

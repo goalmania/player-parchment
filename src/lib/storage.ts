@@ -46,6 +46,7 @@ function rowToPlayer(row: any): Player {
     foot: row.foot || "Destro",
     height: row.height ?? 180,
     weight: row.weight ?? 75,
+    body_type: row.body_type || "Normolineo",
     tactical_roles: row.tactical_roles || [],
     ratings: (() => {
       const r = row.ratings || {};
@@ -70,6 +71,11 @@ function rowToPlayer(row: any): Player {
         aerial: Number(s.aerial) || 60,
         pace: Number(s.pace) || 60,
         stamina: Number(s.stamina) || 60,
+        crossing: Number(s.crossing) || 60,
+        heading: Number(s.heading) || 60,
+        marking: Number(s.marking) || 60,
+        vision: Number(s.vision) || 60,
+        work_rate: Number(s.work_rate) || 60,
       };
     })(),
     stars: (() => {
@@ -136,6 +142,7 @@ function playerToRow(p: Player, ownerId: string) {
     foot: p.foot,
     height: p.height,
     weight: p.weight,
+    body_type: p.body_type || null,
     tactical_roles: p.tactical_roles,
     ratings: p.ratings,
     skills: p.skills,
