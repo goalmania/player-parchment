@@ -5,6 +5,7 @@ import { usePlayers } from "@/lib/usePlayers";
 import { getShortlist } from "@/lib/shortlist";
 import type { Player, PositionCode, RoleDef, RoleDuty } from "@/lib/types";
 import { POSITION_LABEL, ROLE_OPTIONS_BY_POSITION, FORMATIONS as ALL_FORMATIONS } from "@/lib/types";
+import { computeTacticalFit, getRoleKeyAttributes } from "@/lib/tacticalFit";
 
 type Slot = { label: string; position: PositionCode; x: number; y: number; role?: RoleDef; duty?: RoleDuty };
 
@@ -176,26 +177,6 @@ function loadSquad(): Squad {
 }
 function saveSquad(s: Squad) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
 
-const positionFamily: Record<PositionCode, PositionCode[]> = {
-  GK: ["GK"],
-  CB: ["CB"],
-  LB: ["LB", "CB"],
-  RB: ["RB", "CB"],
-  CDM: ["CDM", "CM"],
-  CM: ["CM", "CDM", "CAM"],
-  CAM: ["CAM", "CM"],
-  LW: ["LW", "CAM", "ST", "CF"],
-  RW: ["RW", "CAM", "ST", "CF"],
-  ST: ["ST", "CF"],
-  CF: ["CF", "ST", "CAM"],
-};
-
-function fitFor(player: Player, slot: PositionCode): number {
-  const family = positionFamily[slot] || [slot];
-  if (player.position_code === slot) return 1;
-  if (family.includes(player.position_code)) return 0.85;
-  return 0.55;
-}
 
 export default function SquadBuilder() {
   const players = usePlayers();
@@ -240,7 +221,11 @@ export default function SquadBuilder() {
       .filter((x): x is { player: Player; slot: Slot } => !!x && !!x.player);
     if (used.length === 0) return null;
     const overall = used.reduce((s, u) => s + u.player.ratings.overall, 0) / used.length;
-    const fit = used.reduce((s, u) => s + fitFor(u.player, u.slot.position), 0) / used.length * 100;
+    const fitRaw = used.reduce((s, u) => {
+      const as = squad.assignments[slots.indexOf(u.slot)];
+      return s + computeTacticalFit(u.player, u.slot.position, as?.role_code);
+    }, 0) / used.length;
+    const fit = fitRaw * 100;
     const tech = used.reduce((s, u) => s + u.player.ratings.technical, 0) / used.length;
     const tact = used.reduce((s, u) => s + u.player.ratings.tactical, 0) / used.length;
     const phys = used.reduce((s, u) => s + u.player.ratings.physical, 0) / used.length;
@@ -292,7 +277,7 @@ export default function SquadBuilder() {
             {slots.map((s, i) => {
               const as = squad.assignments[i];
               const player = as?.player_id ? players.find((p) => p.id === as.player_id) : null;
-              const fit = player ? fitFor(player, s.position) : 0;
+              const fit = player ? computeTacticalFit(player, s.position, as?.role_code) : 0;
               const fill = player ? (fit >= 1 ? "hsl(var(--accent))" : fit >= 0.85 ? "hsl(var(--accent2))" : "hsl(var(--orange))") : "rgba(255,255,255,0.12)";
               return (
                 <g key={i} style={{ cursor: "pointer" }} onClick={() => setActiveSlot(i)}>
@@ -390,12 +375,19 @@ export default function SquadBuilder() {
                 </select>
               </div>
               <button onClick={() => assignPlayer(activeSlot!, null)} className="dm-btn-outline !py-1 !px-2 text-[10px] mb-2 w-full">— Svuota giocatore —</button>
+              {activeAssignment?.role_code && (
+                <div className="mb-2 px-2 py-1.5 bg-gray-light border-hairline text-[10px] font-mono text-gray-soft">
+                  KEY: {getRoleKeyAttributes(activeAssignment.role_code).join(" · ")}
+                </div>
+              )}
               <div className="max-h-[320px] overflow-y-auto space-y-1">
                 {filteredPool
-                  .map((p) => ({ p, fit: fitFor(p, activeSlotData.position) }))
+                  .map((p) => ({ p, fit: computeTacticalFit(p, activeSlotData.position, activeAssignment?.role_code) }))
                   .sort((a, b) => b.fit - a.fit || b.p.ratings.overall - a.p.ratings.overall)
                   .map(({ p, fit }) => {
                     const used = squad.assignments.some((a) => a?.player_id === p.id);
+                    const fitPct = Math.round(fit * 100);
+                    const fitColor = fitPct >= 85 ? "hsl(var(--accent))" : fitPct >= 70 ? "hsl(var(--accent2))" : "hsl(var(--orange))";
                     return (
                       <button
                         key={p.id}
@@ -405,8 +397,8 @@ export default function SquadBuilder() {
                         <span className="font-mono text-xs w-8 text-accent-lime">{p.ratings.overall.toFixed(1)}</span>
                         <span className="flex-1 truncate text-sm font-display font-semibold uppercase">{p.name}</span>
                         <span className="font-mono text-[10px] text-gray-soft">{p.position_code}</span>
-                        <span className="font-mono text-[10px]" style={{ color: fit >= 1 ? "hsl(var(--accent))" : fit >= 0.85 ? "hsl(var(--accent2))" : "hsl(var(--orange))" }}>
-                          {Math.round(fit * 100)}%
+                        <span className="font-mono text-[10px]" style={{ color: fitColor }}>
+                          {fitPct}%
                         </span>
                       </button>
                     );
